@@ -1,37 +1,31 @@
-// =====================================================================
-// TP1 - Analyse numerique matricielle
-// Methodes de resolution directe des systemes lineaires
-// Fichier de fonctions (a charger avec exec("tp1.sci", -1) )
-// =====================================================================
-
-
-// ---------------------------------------------------------------------
-// I. Systemes triangulaires
-// ---------------------------------------------------------------------
-
-// I.1. La somme  sum_{j=1}^{i-1} a(i,j)*x(j)  est le produit scalaire
-// du vecteur ligne extrait A(i,1:i-1) par le vecteur colonne extrait
-// x(1:i-1) :  A(i,1:i-1)*x(1:i-1)
-
-// I.2. Resolution de Lx = b, L triangulaire inferieure (descente)
-function x = solinf(L, b)
-    n = size(L, 1);
-    x = zeros(n, 1);
-    x(1) = b(1) / L(1,1);
-    for i = 2:n
-        x(i) = (b(i) - L(i,1:i-1)*x(1:i-1)) / L(i,i);
+function x=solinf(L, b)
+    n=size(L,1)
+    x=zeros(n,1)
+    x(1)=b(1)/L(1,1)
+    for i=2:n
+        x(i)=(b(i)-L(i,1:(i-1))*x(1:(i-1)))/L(i,i)
     end
 endfunction
 
-// I.3. Resolution de Ux = b, U triangulaire superieure (remontee)
-function x = solsup(U, b)
-    n = size(U, 1);
+function x=solinfGPT(L, b)
+    n = length(b);
     x = zeros(n, 1);
-    x(n) = b(n) / U(n,n);
-    for i = n-1:-1:1
-        x(i) = (b(i) - U(i,i+1:n)*x(i+1:n)) / U(i,i);
+    for i = 1:n
+        x(i) = (b(i) - L(i,1:i-1) * x(1:i-1)) / L(i,i);
     end
 endfunction
+
+function x=solsup(U, b)
+    n=size(U,1)
+    x=zeros(n,1)
+    x(n)=b(n)/U(n,n)
+    for i=n-1:-1:1
+        x(i)=(b(i)-U(i,(i+1):n)*x((i+1):n))/U(i,i)
+    end
+endfunction
+
+// I.1. La somme sum_{j=1}^{i-1} a(i,j)*x(j) est le produit du vecteur
+// ligne extrait A(i,1:i-1) par le vecteur colonne extrait x(1:i-1).
 
 
 // ---------------------------------------------------------------------
