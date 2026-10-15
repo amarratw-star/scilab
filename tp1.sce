@@ -1,5 +1,5 @@
 clear  // efface toutes les variables assignées
-xdel(winsid())  // ferme toutes les fenêtres graphiques
+close(winsid())  // ferme toutes les fenêtres graphiques
 exec('TP1.sci')
 
 //////
