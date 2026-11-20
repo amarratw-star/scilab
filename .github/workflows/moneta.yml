@@ -1,0 +1,52 @@
+name: MONETA
+
+on:
+  push:
+    paths: ["moneta/**", ".github/workflows/moneta.yml"]
+  pull_request:
+    paths: ["moneta/**", ".github/workflows/moneta.yml"]
+
+defaults:
+  run:
+    working-directory: moneta
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      APP_ENCRYPTION_KEY: ci-only-key-0123456789abcdef0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: moneta/package-lock.json
+      - run: npm ci
+      - name: Bases de test
+        run: |
+          bash scripts/setup-local-db.sh moneta_test
+          bash scripts/setup-local-db.sh moneta_e2e
+          MIGRATION_DATABASE_URL=postgres://moneta_owner:moneta_owner_dev@localhost:5432/moneta_test npm run db:migrate
+          MIGRATION_DATABASE_URL=postgres://moneta_owner:moneta_owner_dev@localhost:5432/moneta_e2e npm run db:migrate
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run test:integration
+        env:
+          DATABASE_URL: postgres://moneta_app:moneta_app_dev@localhost:5432/moneta_test
+      - run: npm run build
+        env:
+          DATABASE_URL: postgres://moneta_app:moneta_app_dev@localhost:5432/moneta_e2e
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
