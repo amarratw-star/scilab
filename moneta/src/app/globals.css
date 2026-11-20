@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Système de design MONETA
+ * Structure noir & blanc, gris pour le secondaire, vert = positif, rouge = dépenses/alertes,
+ * orange = avertissements, bleu = informations neutres.
+ */
+:root {
+  --background: #fafaf9;
+  --surface: #ffffff;
+  --surface-2: #f4f4f3;
+  --surface-3: #ebebe9;
+  --border: #e7e6e3;
+  --border-strong: #d6d5d1;
+  --foreground: #0b0b0b;
+  --muted: #52514e;
+  --subtle: #8a8984;
+  --primary: #0b0b0b;
+  --primary-foreground: #ffffff;
+  --ring: #2a78d6;
+
+  --positive: #047857;
+  --positive-soft: #ecfdf3;
+  --negative: #c62828;
+  --negative-soft: #fef1f1;
+  --warning: #b45309;
+  --warning-soft: #fff7e6;
+  --info: #1d63c1;
+  --info-soft: #eef5fe;
+
+  /* Graphiques */
+  --chart-balance: #2a78d6;
+  --chart-income: #1a9e6c;
+  --chart-expense: #e34948;
+  --chart-savings: #6250d6;
+  --chart-prudent: #eb6834;
+  --chart-optimistic: #1baf7a;
+  --chart-band: #2a78d6;
+  --chart-grid: #ebebe9;
+  --chart-axis: #8a8984;
+}
+
+.dark {
+  --background: #0c0c0b;
+  --surface: #141413;
+  --surface-2: #1c1c1a;
+  --surface-3: #262624;
+  --border: #2a2a27;
+  --border-strong: #3a3a36;
+  --foreground: #f0efec;
+  --muted: #b5b4ac;
+  --subtle: #85847d;
+  --primary: #f0efec;
+  --primary-foreground: #0b0b0b;
+  --ring: #3987e5;
+
+  --positive: #34d399;
+  --positive-soft: #0d2a1f;
+  --negative: #f87171;
+  --negative-soft: #2e1414;
+  --warning: #fbbf24;
+  --warning-soft: #2c2210;
+  --info: #60a5fa;
+  --info-soft: #102236;
+
+  --chart-balance: #3987e5;
+  --chart-income: #22b37c;
+  --chart-expense: #e66767;
+  --chart-savings: #9085e9;
+  --chart-prudent: #d95926;
+  --chart-optimistic: #199e70;
+  --chart-band: #3987e5;
+  --chart-grid: #262624;
+  --chart-axis: #85847d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --radius-card: 16px;
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-slide-up: slide-up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer base {
+  * { border-color: var(--border); }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: color-mix(in oklab, var(--ring) 25%, transparent); }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 6px; }
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+.prose-chat p { margin: 0.4em 0; }
+.prose-chat ul, .prose-chat ol { margin: 0.4em 0; padding-left: 1.2em; }
+.prose-chat ul { list-style: disc; }
+.prose-chat ol { list-style: decimal; }
+.prose-chat strong { font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Recharts : éviter le contour de focus rectangulaire par défaut */
+.recharts-wrapper *:focus { outline: none; }

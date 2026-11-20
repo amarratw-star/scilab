@@ -42,7 +42,7 @@ export async function seedDemoData(ctx: Ctx) {
   const [checking, livret, cash, pea] = await ctx.tx
     .insert(s.accounts)
     .values([
-      { userId: ctx.userId, name: "Compte courant (démo)", institution: "Banque Démo", type: "checking", initialBalance: 184_250, openedOn: opened, color: "#6366f1", icon: "wallet", sortOrder: 0, description: "Compte fictif de démonstration" },
+      { userId: ctx.userId, name: "Compte courant (démo)", institution: "Banque Démo", type: "checking", initialBalance: 284_250, openedOn: opened, color: "#6366f1", icon: "wallet", sortOrder: 0, description: "Compte fictif de démonstration" },
       { userId: ctx.userId, name: "Livret A (démo)", institution: "Banque Démo", type: "savings", initialBalance: 420_000, openedOn: opened, color: "#10b981", icon: "piggy-bank", sortOrder: 1, description: "Compte fictif de démonstration" },
       { userId: ctx.userId, name: "Espèces (démo)", institution: null, type: "cash", initialBalance: 6_000, openedOn: opened, color: "#f59e0b", icon: "banknote", sortOrder: 2 },
       { userId: ctx.userId, name: "PEA (démo)", institution: "Courtier Démo", type: "investment", initialBalance: 350_000, openedOn: opened, color: "#0ea5e9", icon: "trending-up", sortOrder: 3 },
@@ -144,8 +144,8 @@ export async function seedDemoData(ctx: Ctx) {
 
   // Budgets
   const budgetDefs: [string | null, string, number][] = [
-    [null, "Budget global du mois", 140_000],
-    ["Restaurants", "Restaurants", 15_000],
+    [null, "Budget global du mois", 200_000],
+    ["Restaurants", "Restaurants", 20_000],
     ["Courses alimentaires", "Courses", 30_000],
     ["Shopping", "Shopping", 20_000],
     ["Transport", "Transport", 12_000],
