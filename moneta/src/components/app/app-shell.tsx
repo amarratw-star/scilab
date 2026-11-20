@@ -112,7 +112,7 @@ export function AppShell({ user, refData, children }: { user: { displayName: str
               </Link>
               <button
                 onClick={() => setSearchOpen(true)}
-                className="ml-1 flex h-9 flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm text-subtle transition hover:border-border-strong sm:max-w-md"
+                className="ml-1 flex h-9 min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm text-subtle transition hover:border-border-strong sm:max-w-md"
                 aria-label="Rechercher"
               >
                 <Search className="size-4" />

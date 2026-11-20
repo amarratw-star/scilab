@@ -22,7 +22,7 @@ export function PeriodPicker({ value, from, to, basePath }: { value: PeriodKey; 
     router.replace(`${basePath}?${next.toString()}`, { scroll: false });
   };
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex min-w-0 max-w-full flex-col gap-2">
       <Segmented size="sm" value={value} onChange={(v) => (v === "perso" ? go({ periode: "perso", du, au }) : go({ periode: v }))} options={PERIOD_OPTIONS.map((p) => ({ value: p.value, label: p.label }))} />
       {value === "perso" && (
         <form

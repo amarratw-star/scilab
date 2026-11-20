@@ -15,7 +15,9 @@ export async function rateLimit(key: string, limit: number, windowSeconds: numbe
     returning count
   `);
   const count = Number((rows as unknown as { count: number }[])[0]?.count ?? 0);
-  return count <= limit;
+  // RATE_LIMIT_MULTIPLIER permet d'assouplir les limites en test de bout en bout (1 en production).
+  const multiplier = Math.max(1, Number(process.env.RATE_LIMIT_MULTIPLIER ?? 1) || 1);
+  return count <= limit * multiplier;
 }
 
 export async function resetRateLimit(key: string) {

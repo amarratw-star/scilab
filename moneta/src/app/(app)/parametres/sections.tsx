@@ -49,7 +49,7 @@ export function SettingsSections(p: Props) {
           {SECTIONS.map(([id, l]) => <li key={id}><a href={`#${id}`} className="block rounded-lg px-3 py-1.5 text-muted hover:bg-surface-2 hover:text-foreground">{l}</a></li>)}
         </ul>
       </nav>
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6">
         <Profile {...p} />
         <Appearance />
         <Dashboard hidden={p.user.settings.dashboard?.hidden ?? []} />

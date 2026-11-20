@@ -169,7 +169,7 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
             ))}
           </CardContent>
         </Card>
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="size-4 text-warning" /> Dépenses inhabituelles</CardTitle></CardHeader>
             <CardContent>
@@ -191,8 +191,8 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
                 <ul className="divide-y divide-border text-sm">
                   {recurring.map((r) => (
                     <li key={r.key} className="flex items-center justify-between gap-3 py-2">
-                      <span className="truncate">{r.label} <span className="text-xs text-subtle">· {r.occurrences}× · {r.frequency === "monthly" ? "mensuel" : r.frequency === "weekly" ? "hebdo" : "annuel"}</span></span>
-                      <span className="flex items-center gap-2">{r.matchesExistingRule ? <Badge tone="positive">Suivi</Badge> : <Badge tone="warning">Non suivi</Badge>}<span className="tabular">{formatMoney(r.monthlyCost)}/mois</span></span>
+                      <span className="min-w-0 truncate">{r.label} <span className="text-xs text-subtle">· {r.occurrences}× · {r.frequency === "monthly" ? "mensuel" : r.frequency === "weekly" ? "hebdo" : "annuel"}</span></span>
+                      <span className="flex shrink-0 items-center gap-2">{r.matchesExistingRule ? <Badge tone="positive">Suivi</Badge> : <Badge tone="warning">Non suivi</Badge>}<span className="tabular">{formatMoney(r.monthlyCost)}/mois</span></span>
                     </li>
                   ))}
                 </ul>

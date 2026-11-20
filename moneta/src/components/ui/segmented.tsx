@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export function Segmented<T extends string>({ value, onChange, options, className, size = "default" }: { value: T; onChange: (v: T) => void; options: { value: T; label: React.ReactNode }[]; className?: string; size?: "default" | "sm" }) {
   return (
-    <div role="radiogroup" className={cn("inline-flex max-w-full overflow-x-auto scrollbar-none rounded-xl border border-border bg-surface-2 p-0.5", className)}>
+    <div role="radiogroup" className={cn("inline-flex min-w-0 max-w-full overflow-x-auto scrollbar-none rounded-xl border border-border bg-surface-2 p-0.5", className)}>
       {options.map((o) => (
         <button
           key={o.value}
