@@ -95,7 +95,8 @@ export function annualEquivalent(amount: number, frequency: Frequency): number {
 export function realizedKeys(txs: LedgerTx[]): Set<string> {
   const keys = new Set<string>();
   for (const t of txs) {
-    if (t.status === "cancelled" || !t.recurringId || !t.occurrenceDate) continue;
+    // Une échéance confirmée (posted), prévue ou ignorée (cancelled) est considérée comme traitée.
+    if (!t.recurringId || !t.occurrenceDate) continue;
     keys.add(`${t.recurringId}|${t.occurrenceDate}`);
   }
   return keys;

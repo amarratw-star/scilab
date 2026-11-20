@@ -165,7 +165,7 @@ export function forecast(input: ForecastInput): ForecastResult {
     }
   }
   for (const tx of input.txs) {
-    if (tx.status !== "planned" || tx.recurringId || tx.date > end) continue;
+    if (tx.status !== "planned" || tx.date > end) continue;
     const date = tx.date <= today ? tomorrow : tx.date;
     const d = scopeDelta(tx, scope, "posted+planned");
     if (d === 0) continue;

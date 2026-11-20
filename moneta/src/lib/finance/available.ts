@@ -106,7 +106,6 @@ export function computeAvailable(input: AvailableInput): AvailableResult {
   let plannedExpenses = 0;
   for (const tx of input.txs) {
     if (tx.status !== "planned" || tx.date > monthEnd) continue;
-    if (tx.recurringId) continue; // déjà couvert par les échéances
     const d = scopeDelta(tx, liquidIds, "posted+planned");
     if (tx.kind === "income" || tx.kind === "refund") {
       if (d > 0 && tx.date >= today) {
