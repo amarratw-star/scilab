@@ -7,7 +7,7 @@ export function Progress({ value, tone = "auto", className, label }: { value: nu
   const color =
     tone === "positive" ? "bg-positive" : tone === "info" ? "bg-info" : tone === "neutral" ? "bg-foreground" : v > 1 ? "bg-negative" : v >= 0.9 ? "bg-negative" : v >= 0.75 ? "bg-warning" : "bg-positive";
   return (
-    <div className={cn("h-2 w-full overflow-hidden rounded-full bg-surface-3", className)} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v * 100)} aria-label={label}>
+    <div className={cn("h-1.5 w-full overflow-hidden rounded-full bg-surface-3", className)} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v * 100)} aria-label={label}>
       <div className={cn("h-full rounded-full transition-[width] duration-700 ease-out", color)} style={{ width: `${pct}%` }} />
     </div>
   );

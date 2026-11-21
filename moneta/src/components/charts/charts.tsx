@@ -88,10 +88,11 @@ function formatX(d: string, granularity: "day" | "week" | "month") {
 
 /* ------------------------------------------------------------------ */
 
-export function BalanceChart({ data, height = 260 }: { data: { date: string; total: number; available: number }[]; height?: number }) {
+export function BalanceChart({ data, height = 260, totalLabel = "Patrimoine financier (tous comptes)" }: { data: { date: string; total: number; available: number }[]; height?: number; totalLabel?: string }) {
+  if (!data.length) return <EmptyChart height={height} />;
   return (
     <>
-      <Legend className="mb-3" items={[{ label: "Patrimoine financier (tous comptes)", color: "var(--chart-balance)" }, { label: "Disponible (courants + espèces)", color: "var(--chart-savings)" }]} />
+      <Legend className="mb-3" items={[{ label: totalLabel, color: "var(--chart-balance)" }, { label: "Disponible (courants + espèces)", color: "var(--chart-savings)" }]} />
       <ChartFrame height={height} label="Évolution des soldes">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -111,15 +112,15 @@ export function BalanceChart({ data, height = 260 }: { data: { date: string; tot
                   <TooltipBox
                     title={formatDateFR(String(label))}
                     rows={[
-                      { name: "Patrimoine financier", value: Number(payload[0]?.payload.total), color: "var(--chart-balance)" },
+                      { name: totalLabel.split(" (")[0], value: Number(payload[0]?.payload.total), color: "var(--chart-balance)" },
                       { name: "Disponible", value: Number(payload[0]?.payload.available), color: "var(--chart-savings)" },
                     ]}
                   />
                 ) : null
               }
             />
-            <Area type="monotone" dataKey="total" stroke="var(--chart-balance)" strokeWidth={2} fill="url(#g-balance)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--surface)" }} />
-            <Area type="monotone" dataKey="available" stroke="var(--chart-savings)" strokeWidth={2} fill="transparent" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--surface)" }} />
+            <Area type="monotone" dataKey="total" stroke="var(--chart-balance)" strokeWidth={2} fill="url(#g-balance)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--surface)" }} isAnimationActive={false} />
+            <Area type="monotone" dataKey="available" stroke="var(--chart-savings)" strokeWidth={2} fill="transparent" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--surface)" }} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
       </ChartFrame>
@@ -127,7 +128,17 @@ export function BalanceChart({ data, height = 260 }: { data: { date: string; tot
   );
 }
 
+export function EmptyChart({ height = 220, text = "Pas encore de données sur cette période." }: { height?: number; text?: string }) {
+  return (
+    <div style={{ height }} className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border-strong text-center text-sm text-muted">
+      <svg viewBox="0 0 64 24" className="h-6 w-16 text-subtle" aria-hidden><path d="M2 20 L14 14 L26 17 L38 8 L50 11 L62 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 4" /></svg>
+      {text}
+    </div>
+  );
+}
+
 export function FlowChart({ data, granularity, height = 260 }: { data: { key: string; income: number; expenses: number; savings: number }[]; granularity: "day" | "week" | "month"; height?: number }) {
+  if (!data.some((d) => d.income || d.expenses)) return <EmptyChart height={height} text="Aucun revenu ni dépense sur cette période." />;
   return (
     <>
       <Legend className="mb-3" items={[{ label: "Revenus", color: "var(--chart-income)" }, { label: "Dépenses", color: "var(--chart-expense)" }, { label: "Épargne nette", color: "var(--chart-savings)", dashed: true }]} />
@@ -153,9 +164,9 @@ export function FlowChart({ data, granularity, height = 260 }: { data: { key: st
                 ) : null
               }
             />
-            <Bar dataKey="income" fill="var(--chart-income)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+            <Bar dataKey="income" fill="var(--chart-income)" radius={[4, 4, 0, 0]} maxBarSize={28} animationDuration={400} />
             <Bar dataKey="expenses" fill="var(--chart-expense)" radius={[4, 4, 0, 0]} maxBarSize={28} />
-            <Line type="monotone" dataKey="savings" stroke="var(--chart-savings)" strokeWidth={2} strokeDasharray="4 3" dot={false} />
+            <Line type="monotone" dataKey="savings" stroke="var(--chart-savings)" strokeWidth={2} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartFrame>
@@ -330,7 +341,7 @@ export function NetWorthChart({ data, height = 260 }: { data: { month: string; n
               ) : null
             }
           />
-          <Area type="monotone" dataKey="net" stroke="var(--chart-balance)" strokeWidth={2} fill="url(#g-nw)" dot={{ r: 3, strokeWidth: 0, fill: "var(--chart-balance)" }} />
+          <Area type="monotone" dataKey="net" stroke="var(--chart-balance)" strokeWidth={2} fill="url(#g-nw)" dot={{ r: 3, strokeWidth: 0, fill: "var(--chart-balance)" }} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
     </ChartFrame>

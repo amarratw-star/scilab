@@ -42,14 +42,14 @@ export function PeriodPicker({ value, from, to, basePath }: { value: PeriodKey; 
   );
 }
 
-export function DashboardChart({ balances, flows, granularity }: { balances: { date: string; total: number; available: number }[]; flows: { key: string; income: number; expenses: number; savings: number }[]; granularity: "day" | "week" | "month" }) {
+export function DashboardChart({ balances, flows, granularity, totalLabel }: { balances: { date: string; total: number; available: number }[]; flows: { key: string; income: number; expenses: number; savings: number }[]; granularity: "day" | "week" | "month"; totalLabel?: string }) {
   const [view, setView] = useState<"soldes" | "flux">("soldes");
   return (
     <div>
       <div className="mb-3">
-        <Segmented size="sm" value={view} onChange={setView} options={[{ value: "soldes", label: "Soldes" }, { value: "flux", label: "Revenus, dépenses, épargne" }]} />
+        <Segmented size="sm" value={view} onChange={setView} options={[{ value: "soldes", label: "Solde et patrimoine" }, { value: "flux", label: "Revenus · Dépenses · Épargne" }]} />
       </div>
-      {view === "soldes" ? <BalanceChart data={balances} /> : <FlowChart data={flows} granularity={granularity} />}
+      {view === "soldes" ? <BalanceChart data={balances} totalLabel={totalLabel} /> : <FlowChart data={flows} granularity={granularity} />}
     </div>
   );
 }

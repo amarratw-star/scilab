@@ -31,7 +31,7 @@ type Props = {
 
 const TIMEZONES = ["Europe/Paris", "Europe/Brussels", "Europe/Zurich", "Europe/Luxembourg", "Europe/Monaco", "Europe/London", "Europe/Madrid", "Europe/Berlin", "America/Montreal", "America/Guadeloupe", "America/Martinique", "Indian/Reunion", "Indian/Mayotte", "America/Cayenne", "Pacific/Noumea", "Pacific/Tahiti", "Africa/Casablanca", "Africa/Dakar", "Africa/Abidjan", "UTC"];
 const SECTIONS = [["profil", "Profil"], ["apparence", "Apparence"], ["tableau-de-bord", "Tableau de bord"], ["notifications", "Notifications"], ["categories", "Catégories"], ["confidentialite", "Confidentialité et IA"], ["securite", "Sécurité"], ["donnees", "Mes données"], ["integrations", "Intégrations"]];
-const DASH = [["actions", "Actions rapides"], ["kpis", "Indicateurs clés"], ["chart", "Graphique principal"], ["available", "Combien puis-je dépenser"], ["summary", "Ton mois en bref"], ["alerts", "Alertes"], ["categories", "Répartition par catégorie"], ["budgets", "Budgets"], ["recent", "Dernières opérations"], ["upcoming", "Prochains prélèvements"]];
+const DASH = [["actions", "Actions rapides"], ["kpis", "Indicateurs clés"], ["chart", "Graphique principal"], ["available", "Combien puis-je dépenser"], ["summary", "Ton mois en bref"], ["health", "Santé financière"], ["alerts", "Alertes"], ["opportunities", "Opportunités d'économies"], ["categories", "Répartition par catégorie"], ["budgets", "Budgets"], ["recent", "Dernières opérations"], ["upcoming", "Prochains prélèvements"]];
 
 function useDone() {
   const router = useRouter();

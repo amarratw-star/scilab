@@ -1,5 +1,5 @@
 import {
-  ArrowLeftRight, BarChart3, Bot, Calculator, CalendarDays, FileText, FolderOpen, Gauge, Landmark, LayoutDashboard, PiggyBank, Repeat, ScanLine, Settings, TrendingUp, Upload, Wallet, Coins, type LucideIcon,
+  ArrowLeftRight, BarChart3, HeartPulse, Bot, Calculator, CalendarDays, FileText, FolderOpen, Gauge, Landmark, LayoutDashboard, PiggyBank, Repeat, ScanLine, Settings, TrendingUp, Upload, Wallet, Coins, type LucideIcon,
 } from "lucide-react";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -22,6 +22,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/disponible", label: "Combien dépenser ?", icon: Coins },
       { href: "/analyses", label: "Analyses", icon: BarChart3 },
+      { href: "/sante", label: "Santé financière", icon: HeartPulse },
       { href: "/conseiller", label: "Mon conseiller", icon: Bot },
       { href: "/simulateur", label: "Simulateur", icon: Calculator },
       { href: "/previsions", label: "Prévisions", icon: TrendingUp },
