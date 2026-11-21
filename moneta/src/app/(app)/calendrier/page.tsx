@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/ui/misc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Treasury } from "./treasury";
 
 export const metadata: Metadata = { title: "Calendrier" };
 
@@ -20,7 +21,7 @@ type Ev = { id: string; date: ISODate; label: string; amount: number | null; typ
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
   const sp = await searchParams;
-  const { fin, today } = await runAsUser(user, async (ctx) => ({ fin: await loadFinance(ctx), today: ctx.today }));
+  const { fin, today, settings } = await runAsUser(user, async (ctx) => ({ fin: await loadFinance(ctx), today: ctx.today, settings: ctx.settings }));
   const month = sp.mois && /^\d{4}-\d{2}$/.test(sp.mois) ? `${sp.mois}-01` : startOfMonth(today);
   const selected = sp.jour && isValidISODate(sp.jour) ? sp.jour : month === startOfMonth(today) ? today : month;
   const gridStart = startOfWeek(month);
@@ -52,15 +53,17 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
 
   return (
     <div>
-      <PageHeader title="Calendrier financier" description="Opérations réelles (pleines) et prévues (contour) jour par jour." />
+      <PageHeader title="Calendrier et trésorerie" description="Quand ton argent entre et sort : chronologie, solde prévisionnel et calendrier mensuel." />
+      <Treasury fin={fin} today={today} horizonParam={sp.horizon} cushion={settings.safetyCushion ?? 0} month={monthKey(month)} />
+      <h2 className="mb-3 text-[15px] font-semibold">Calendrier mensuel</h2>
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <Card>
           <CardHeader className="items-center">
             <CardTitle className="text-lg capitalize">{formatMonthLabel(monthKey(month))}</CardTitle>
             <div className="flex items-center gap-1">
-              <Button asChild size="icon-sm" variant="outline"><Link href={`/calendrier?mois=${prev}`} aria-label="Mois précédent"><ChevronLeft /></Link></Button>
+              <Button asChild size="icon-sm" variant="outline"><Link href={`/calendrier?mois=${prev}${sp.horizon ? `&horizon=${sp.horizon}` : ""}`} aria-label="Mois précédent"><ChevronLeft /></Link></Button>
               <Button asChild size="sm" variant="outline"><Link href="/calendrier">Aujourd&apos;hui</Link></Button>
-              <Button asChild size="icon-sm" variant="outline"><Link href={`/calendrier?mois=${next}`} aria-label="Mois suivant"><ChevronRight /></Link></Button>
+              <Button asChild size="icon-sm" variant="outline"><Link href={`/calendrier?mois=${next}${sp.horizon ? `&horizon=${sp.horizon}` : ""}`} aria-label="Mois suivant"><ChevronRight /></Link></Button>
             </div>
           </CardHeader>
           <CardContent>

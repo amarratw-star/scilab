@@ -34,6 +34,7 @@ export default async function SimulatorPage() {
         categories={cats}
         hasHistory={series.some((m) => m.income > 0 || m.expenses > 0)}
         scenarios={{ reliability: f.reliability, start: f.startBalance, milestones: f.milestones, assumptions: f.assumptions }}
+        base={{ available: fin.summary.available, resteAVivre: ov.resteAVivre, globalBudgetRemaining: ov.budgets.find((b) => !b.budget.categoryId && b.budget.period === "monthly")?.remaining ?? null, monthsOfData: series.filter((m) => m.income > 0 || m.expenses > 0).length }}
       />
     </div>
   );

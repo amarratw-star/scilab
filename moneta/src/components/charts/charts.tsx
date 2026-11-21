@@ -360,3 +360,36 @@ export function Sparkline({ values, color = "var(--chart-balance)", height = 36 
     </ChartFrame>
   );
 }
+
+/** Comparaison de deux trajectoires (situation actuelle vs scénario simulé). */
+export function ScenarioChart({ data, height = 260 }: { data: { label: string; current: number; simulated: number }[]; height?: number }) {
+  return (
+    <>
+      <Legend className="mb-3" items={[{ label: "Situation actuelle", color: "var(--chart-axis)", dashed: true }, { label: "Scénario simulé", color: "var(--chart-balance)" }]} />
+      <ChartFrame height={height} label="Comparaison du solde projeté">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+            <XAxis dataKey="label" {...axisProps} interval="preserveStartEnd" />
+            <YAxis {...axisProps} width={64} tickFormatter={(v) => compactEuro(v)} />
+            <ReferenceLine y={0} stroke="var(--negative)" strokeOpacity={0.5} />
+            <Tooltip
+              cursor={{ stroke: "var(--chart-axis)", strokeDasharray: "3 3" }}
+              content={({ active, payload, label }) =>
+                active && payload?.length ? (
+                  <TooltipBox title={String(label)} rows={[
+                    { name: "Actuel", value: Number(payload[0].payload.current), color: "var(--chart-axis)" },
+                    { name: "Simulé", value: Number(payload[0].payload.simulated), color: "var(--chart-balance)" },
+                    { name: "Écart", value: Number(payload[0].payload.simulated) - Number(payload[0].payload.current), color: "transparent" },
+                  ]} />
+                ) : null
+              }
+            />
+            <Line type="monotone" dataKey="current" stroke="var(--chart-axis)" strokeWidth={2} strokeDasharray="5 4" dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="simulated" stroke="var(--chart-balance)" strokeWidth={2.5} dot={{ r: 2.5, fill: "var(--chart-balance)", strokeWidth: 0 }} isAnimationActive={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartFrame>
+    </>
+  );
+}

@@ -68,6 +68,7 @@ function TxRow({ t, accountNames, perspectiveAccountId, showDate }: { t: TxView;
   const amount = signedAmount(t, perspectiveAccountId, t.toAccountId);
   const title = t.merchant || t.description || (t.kind === "transfer" ? "Transfert" : t.kind === "adjustment" ? "Régularisation" : cat?.name ?? KIND_LABELS[t.kind]);
   const sub = [
+    t.merchant && t.description && t.description !== t.merchant ? t.description : null,
     t.kind === "transfer" ? `${accountNames[t.accountId] ?? "?"} → ${t.toAccountId ? accountNames[t.toAccountId] ?? "?" : "?"}` : cat?.name ?? (t.kind === "adjustment" ? "Régularisation de solde" : "Non catégorisé"),
     t.kind !== "transfer" ? accountNames[t.accountId] : null,
     showDate ? formatDateFR(t.date) : null,

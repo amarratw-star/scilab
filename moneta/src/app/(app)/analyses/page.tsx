@@ -15,6 +15,9 @@ import { Money } from "@/components/ui/money";
 import { Badge } from "@/components/ui/badge";
 import { BalanceChart, CategoryDonut, MonthlyBars, SingleSeriesBars } from "@/components/charts/charts";
 import { AnalysisPeriod } from "./period";
+import { savingsOpportunities } from "@/lib/finance/opportunities";
+import { PiggyBank } from "lucide-react";
+import Link2 from "next/link";
 
 export const metadata: Metadata = { title: "Analyse financière" };
 
@@ -74,6 +77,8 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
   const top = topExpenses(fin.txs, from, to, 8);
   const recurring = detectRecurringPayments(fin.txs, fin.rules, today).slice(0, 6);
   const recos = recommendations({ txs: fin.txs, cats: fin.cmap, today, rules: fin.rules });
+  const opps = savingsOpportunities({ txs: fin.txs, cats: fin.cmap, rules: fin.rules, reviewed: new Map(fin.ruleRows.map((r) => [r.id, r.lastReviewedAt])), today });
+  const oppTotal = opps.filter((o) => o.kind !== "trend").reduce((s, o) => s + o.annualSaving, 0);
   const balance = chartSeries(fin, from, to, "day").balances;
   const yoyFrom = `${Number(today.slice(0, 4)) - 1}${startOfYear(today).slice(4)}`;
   const yoy = { cur: periodTotals(fin.txs, startOfYear(today), today, fin.cmap), prev: periodTotals(fin.txs, yoyFrom, `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`, fin.cmap) };
@@ -93,6 +98,28 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
         <Stat label="Dépenses exceptionnelles" accent="warning" value={<Money cents={exceptional} />} hint={`${unusual.length} dépense(s) inhabituelle(s)`} />
         <Stat label="Remboursements reçus" value={<Money cents={cur.refunds} />} hint={`Dépenses brutes : ${formatMoney(cur.grossExpenses)}`} />
       </div>
+
+      <Card id="opportunites" className="mt-6 scroll-mt-24">
+        <CardHeader>
+          <div>
+            <CardTitle className="flex items-center gap-2"><PiggyBank className="size-4 text-positive" /> Opportunités d&apos;économies</CardTitle>
+            <CardDescription>{opps.length ? `Jusqu'à ${formatMoney(oppTotal, undefined, { decimals: false })} par an au total si tout était appliqué — estimations calculées sur tes dépenses réelles, pas des garanties.` : "Calculées sur les 3 derniers mois complets."}</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {opps.length === 0 ? <p className="text-sm text-muted">Aucune opportunité identifiée : il faut au moins un mois complet de dépenses, avec des postes variables d&apos;au moins 30 € par mois.</p> : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {opps.map((o) => (
+                <Link2 key={o.id} href={o.href} className="card-interactive rounded-xl border border-border p-3">
+                  <div className="flex items-start justify-between gap-3"><p className="text-sm font-medium">{o.title}</p><Badge tone="positive" className="shrink-0">≈ {formatMoney(o.annualSaving, undefined, { decimals: false })}{o.kind === "trend" ? " ce mois" : "/an"}</Badge></div>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">{o.detail}</p>
+                  <p className="mt-1.5 text-[11px] text-subtle">Base : {o.evidence}</p>
+                </Link2>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Card>

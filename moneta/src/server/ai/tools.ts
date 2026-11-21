@@ -18,6 +18,8 @@ import { computeForecast, computeOverview } from "@/server/services/overview";
 import type { Finance } from "@/server/services/snapshot";
 import type { UserSettings } from "@/server/db/schema";
 import { weekdayName } from "@/lib/dates";
+import { healthScore, HEALTH_LEVEL_LABEL } from "@/lib/finance/health";
+import { savingsOpportunities } from "@/lib/finance/opportunities";
 
 const eur = (c: number | null | undefined) => (c === null || c === undefined ? null : formatMoneyPlain(c));
 
@@ -136,6 +138,16 @@ export const AI_TOOLS: Anthropic.Tool[] = [
     name: "forecast",
     description: "Prévision du solde disponible à N jours (scénarios prudent/normal/optimiste, marge d'incertitude, hypothèses).",
     input_schema: { type: "object", properties: { days: { type: "integer", minimum: 7, maximum: 365 } }, required: ["days"], additionalProperties: false },
+  },
+  {
+    name: "get_health_score",
+    description: "Note de santé financière sur 100 (indicative) avec le détail des 6 critères, points forts, points à améliorer, ou la raison pour laquelle elle n'est pas calculable.",
+    input_schema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "get_savings_opportunities",
+    description: "Opportunités d'économies chiffrées, calculées à partir des dépenses réelles (réduction de postes variables, catégories en hausse, abonnements redondants ou non suivis, frais bancaires).",
+    input_schema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "propose_transaction",
@@ -381,6 +393,21 @@ export async function runTool(name: string, input: Record<string, unknown>, fin:
         hypotheses: f.assumptions,
         scenarios: Object.values(SCENARIOS).map((s) => `${s.label} : ${s.description}`),
       };
+    }
+    case "get_health_score": {
+      const h = healthScore({ today, accounts: fin.accounts, txs: fin.txs, cats: fin.cmap, rules: fin.rules, budgets: fin.budgets });
+      return {
+        statut: h.status === "ok" ? "calculée" : "données insuffisantes",
+        note_sur_100: h.score,
+        niveau: h.level ? HEALTH_LEVEL_LABEL[h.level] : null,
+        raisons_si_insuffisant: h.reasons,
+        criteres: h.criteria.map((c) => ({ critere: c.label, poids: `${c.weight} %`, note: c.score ?? "non évaluable", detail: c.detail, recommandation: c.recommendation })),
+        avertissement: "Note indicative fondée sur des ratios, pas un diagnostic financier officiel.",
+      };
+    }
+    case "get_savings_opportunities": {
+      const ops = savingsOpportunities({ txs: fin.txs, cats: fin.cmap, rules: fin.rules, reviewed: new Map(fin.ruleRows.map((r) => [r.id, r.lastReviewedAt])), today });
+      return ops.length ? ops.map((o) => ({ titre: o.title, detail: o.detail, economie_mensuelle: eur(o.monthlySaving), economie_annuelle: eur(o.annualSaving), base: o.evidence })) : { note: "Aucune opportunité identifiée avec les données actuelles (au moins un mois complet de dépenses nécessaire)." };
     }
     case "propose_transaction": {
       const amount = Math.round(Number(input.amount_euros) * 100);

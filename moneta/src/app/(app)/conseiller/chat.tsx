@@ -12,18 +12,36 @@ import { formatDateFR } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 type Proposal = { kind: "expense" | "income"; amount: number; accountId: string; accountName: string; categoryId: string | null; categoryName: string | null; date: string; description: string };
-type Msg = { role: "user" | "assistant"; content: string; proposals?: Proposal[]; error?: boolean };
+type Msg = { role: "user" | "assistant"; content: string; proposals?: Proposal[]; tools?: string[]; error?: boolean };
 
 const SUGGESTIONS = [
-  "Combien ai-je dépensé cette semaine ?",
-  "Où part le plus mon argent ?",
-  "Est-ce que je peux acheter un téléphone à 900 € ?",
-  "Quel est mon taux d'épargne ?",
-  "Compare mes dépenses des trois derniers mois.",
-  "Prépare-moi un plan pour économiser 3 000 €.",
-  "Quelles sont mes trois principales dépenses ?",
-  "Est-ce que ma situation financière s'améliore ?",
+  "Analyse mes dépenses du mois.",
+  "Où puis-je économiser ?",
+  "Puis-je me permettre un achat de 500 € ?",
+  "Prépare-moi un plan d'épargne.",
+  "Compare mes trois derniers mois.",
+  "Ma situation financière s'améliore-t-elle ?",
+  "Quelle est ma santé financière ?",
+  "Combien puis-je dépenser jusqu'à la fin du mois ?",
 ];
+
+const TOOL_LABELS: Record<string, string> = {
+  get_overview: "Vue d'ensemble",
+  get_period_stats: "Statistiques de période",
+  compare_periods: "Comparaison de périodes",
+  monthly_history: "Historique mensuel",
+  search_transactions: "Opérations",
+  get_budgets: "Budgets",
+  get_goals: "Objectifs",
+  get_subscriptions: "Abonnements",
+  get_insights: "Analyses",
+  simulate_purchase: "Simulation d'achat",
+  savings_plan: "Plan d'épargne",
+  forecast: "Prévisions",
+  get_health_score: "Santé financière",
+  get_savings_opportunities: "Opportunités d'économies",
+  propose_transaction: "Proposition d'opération",
+};
 
 export function ConsentCard() {
   const router = useRouter();
@@ -108,12 +126,20 @@ function ProposalCard({ p }: { p: Proposal }) {
   );
 }
 
-export function Chat({ name }: { name: string }) {
+export function Chat({ name, initialQuestion }: { name: string; initialQuestion?: string }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [messages, loading]);
+  const sentInitial = useRef(false);
+  useEffect(() => {
+    if (initialQuestion && !sentInitial.current) {
+      sentInitial.current = true;
+      void send(initialQuestion);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuestion]);
 
   const send = async (text: string) => {
     const q = text.trim();
@@ -130,7 +156,7 @@ export function Chat({ name }: { name: string }) {
       });
       const data = await res.json();
       if (!res.ok) setMessages((m) => [...m, { role: "assistant", content: data.error ?? "Erreur", error: true }]);
-      else setMessages((m) => [...m, { role: "assistant", content: data.reply, proposals: data.proposals }]);
+      else setMessages((m) => [...m, { role: "assistant", content: data.reply, proposals: data.proposals, tools: data.toolsUsed }]);
     } catch {
       setMessages((m) => [...m, { role: "assistant", content: "Connexion impossible. Vérifie ta connexion internet.", error: true }]);
     } finally {
@@ -156,6 +182,9 @@ export function Chat({ name }: { name: string }) {
             <div className={cn("max-w-[88%] rounded-3xl px-4 py-3 text-[15px] leading-relaxed", m.role === "user" ? "bg-primary text-primary-foreground" : m.error ? "border border-negative/30 bg-negative-soft" : "border border-border bg-surface")}>
               {m.role === "assistant" ? <RichText text={m.content} /> : m.content}
               {m.proposals?.map((p, j) => <ProposalCard key={j} p={p} />)}
+              {m.tools && m.tools.length > 0 && (
+                <p className="mt-2 border-t border-border pt-2 text-[11px] text-subtle">Données consultées : {[...new Set(m.tools)].map((t) => TOOL_LABELS[t] ?? t).join(" · ")}</p>
+              )}
             </div>
           </div>
         ))}

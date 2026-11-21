@@ -6,7 +6,7 @@ import { Field, Input, Select } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { Badge } from "@/components/ui/badge";
 import { Callout } from "@/components/ui/misc";
-import { SingleSeriesBars } from "@/components/charts/charts";
+import { ScenarioChart, SingleSeriesBars } from "@/components/charts/charts";
 import { incomeChangeImpact, PURCHASE_VERDICT, reductionSavings, savingsPlan, simulatePurchase } from "@/lib/finance/simulate";
 import { SCENARIOS } from "@/lib/finance/forecast";
 import type { AvailableResult } from "@/lib/finance/available";
@@ -22,6 +22,7 @@ type Props = {
   categories: { id: string; name: string; monthly: number }[];
   hasHistory: boolean;
   scenarios: { reliability: string; start: number; milestones: { days: number; date: string; prudent: number; normal: number; optimistic: number }[]; assumptions: string[] };
+  base: { available: number; resteAVivre: number; globalBudgetRemaining: number | null; monthsOfData: number };
 };
 
 function Row({ label, value, tone }: { label: string; value: string; tone?: "pos" | "neg" }) {
@@ -34,11 +35,12 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "pos
 }
 
 export function Simulator(p: Props) {
-  const [tab, setTab] = useState<"achat" | "epargne" | "reduction" | "revenus" | "scenarios">("achat");
+  const [tab, setTab] = useState<"complet" | "achat" | "epargne" | "reduction" | "revenus" | "scenarios">("complet");
   return (
     <div>
-      <Segmented value={tab} onChange={setTab} options={[{ value: "achat", label: "Achat" }, { value: "epargne", label: "Objectif d'épargne" }, { value: "reduction", label: "Réduire une dépense" }, { value: "revenus", label: "Revenus et charges" }, { value: "scenarios", label: "Scénarios" }]} />
+      <Segmented value={tab} onChange={setTab} options={[{ value: "complet", label: "Scénario complet" }, { value: "achat", label: "Achat" }, { value: "epargne", label: "Objectif d'épargne" }, { value: "reduction", label: "Réduire une dépense" }, { value: "revenus", label: "Revenus et charges" }, { value: "scenarios", label: "Scénarios" }]} />
       <div className="mt-5">
+        {tab === "complet" && <FullScenario {...p} />}
         {tab === "achat" && <Purchase {...p} />}
         {tab === "epargne" && <SavingsGoal avgSavings={p.avgIncome - p.avgExpenses} />}
         {tab === "reduction" && <Reduction categories={p.categories} />}
@@ -212,5 +214,73 @@ function Scenarios({ s }: { s: Props["scenarios"] }) {
         </ul>
       </CardContent>
     </Card>
+  );
+}
+
+function NumField({ id, label, value, onChange, hint }: { id: string; label: string; value: string; onChange: (v: string) => void; hint?: string }) {
+  return <Field label={label} htmlFor={id} hint={hint}><Input id={id} inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} /></Field>;
+}
+
+/** Scénario combiné : aucune donnée réelle n'est modifiée, tout est calculé dans le navigateur. */
+function FullScenario({ avgIncome, avgExpenses, base, hasHistory }: Props) {
+  const [purchase, setPurchase] = useState("0");
+  const [salary, setSalary] = useState("0");
+  const [newCharge, setNewCharge] = useState("0");
+  const [reduction, setReduction] = useState("0");
+  const [rent, setRent] = useState("0");
+  const [noIncome, setNoIncome] = useState("0");
+  const c = (v: string) => parseAmountToCents(v) ?? 0;
+  const P = Math.abs(c(purchase));
+  const dI = c(salary);
+  const C = Math.abs(c(newCharge));
+  const R = Math.abs(c(reduction));
+  const dL = c(rent);
+  const N = Math.max(0, Math.min(12, Math.round(Number(noIncome.replace(",", ".")) || 0)));
+  const monthlyNow = avgIncome - avgExpenses;
+  const monthlySim = avgIncome + dI - (avgExpenses + C - R + dL);
+  const data = Array.from({ length: 13 }, (_, m) => {
+    let sim = base.available - P;
+    for (let k = 1; k <= m; k++) sim += (k <= N ? 0 : avgIncome + dI) - (avgExpenses + C - R + dL);
+    return { label: m === 0 ? "Auj." : `M+${m}`, current: base.available + m * monthlyNow, simulated: sim };
+  });
+  const end = data[12];
+  const minSim = data.reduce((m, d) => (d.simulated < m.simulated ? d : m), data[0]);
+  const rateNow = avgIncome > 0 ? monthlyNow / avgIncome : null;
+  const rateSim = avgIncome + dI > 0 ? monthlySim / (avgIncome + dI) : null;
+  return (
+    <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+      <Card>
+        <CardHeader><div><CardTitle>Hypothèses</CardTitle><CardDescription>Montants en euros. Base : moyennes des 3 derniers mois complets.</CardDescription></div></CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3">
+          <NumField id="fs-p" label="Achat ponctuel" value={purchase} onChange={setPurchase} />
+          <NumField id="fs-s" label="Variation de salaire / mois" value={salary} onChange={setSalary} hint="Négatif possible" />
+          <NumField id="fs-c" label="Nouvelle charge / mois" value={newCharge} onChange={setNewCharge} />
+          <NumField id="fs-r" label="Réduction de dépenses / mois" value={reduction} onChange={setReduction} />
+          <NumField id="fs-l" label="Changement de loyer / mois" value={rent} onChange={setRent} hint="+ si plus cher, − si moins cher" />
+          <NumField id="fs-n" label="Mois sans revenus" value={noIncome} onChange={setNoIncome} hint="0 à 12" />
+          {!hasHistory && <p className="col-span-2 text-xs text-warning">Pas encore assez d&apos;historique : les moyennes sont à zéro.</p>}
+        </CardContent>
+      </Card>
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="rounded-2xl border border-border bg-surface p-4"><p className="text-xs text-muted">Solde disponible après</p><p className={`mt-1 text-lg font-semibold tabular ${base.available - P < 0 ? "text-negative" : ""}`}>{formatMoney(base.available - P)}</p><p className="text-[11px] text-subtle">aujourd&apos;hui {formatMoney(base.available)}</p></div>
+          <div className="rounded-2xl border border-border bg-surface p-4"><p className="text-xs text-muted">Épargne mensuelle</p><p className={`mt-1 text-lg font-semibold tabular ${monthlySim < 0 ? "text-negative" : ""}`}>{formatMoney(monthlySim)}</p><p className="text-[11px] text-subtle">actuelle {formatMoney(monthlyNow)} · taux {formatPct(rateSim)}</p></div>
+          <div className="rounded-2xl border border-border bg-surface p-4"><p className="text-xs text-muted">Reste à vivre du mois</p><p className="mt-1 text-lg font-semibold tabular">{formatMoney(base.resteAVivre + dI - C - dL)}</p><p className="text-[11px] text-subtle">actuel {formatMoney(base.resteAVivre)}</p></div>
+          <div className="rounded-2xl border border-border bg-surface p-4"><p className="text-xs text-muted">Solde dans 12 mois</p><p className={`mt-1 text-lg font-semibold tabular ${end.simulated < 0 ? "text-negative" : ""}`}>{formatMoney(end.simulated, undefined, { decimals: false })}</p><p className="text-[11px] text-subtle">actuel {formatMoney(end.current, undefined, { decimals: false })}</p></div>
+        </div>
+        <Card>
+          <CardHeader><div><CardTitle>Solde projeté : actuel vs scénario</CardTitle><CardDescription>Projection simple mois par mois à partir de tes moyennes · taux d&apos;épargne actuel {formatPct(rateNow)}</CardDescription></div></CardHeader>
+          <CardContent>
+            <ScenarioChart data={data} />
+            <ul className="mt-3 space-y-1 text-xs text-muted">
+              {minSim.simulated < 0 && <li className="text-negative">Le solde simulé deviendrait négatif (point bas {formatMoney(minSim.simulated, undefined, { decimals: false })} à {minSim.label}).</li>}
+              {P > 0 && base.globalBudgetRemaining !== null && <li>Budget global restant ce mois après l&apos;achat : {formatMoney(base.globalBudgetRemaining - P)}.</li>}
+              <li>Écart à 12 mois : {formatMoney(end.simulated - end.current, undefined, { signed: true })}.</li>
+              <li>Hypothèses : revenus et dépenses constants au niveau moyen observé ; aucune donnée réelle n&apos;est modifiée. Une simulation n&apos;est pas une garantie.</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

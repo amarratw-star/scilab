@@ -7,7 +7,8 @@ import { Chat, ConsentCard } from "./chat";
 
 export const metadata: Metadata = { title: "Mon conseiller" };
 
-export default async function AdvisorPage() {
+export default async function AdvisorPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const sp = await searchParams;
   const user = await requireUser();
   const configured = features.ai();
   const consent = Boolean(user.settings?.privacy?.aiEnabled);
@@ -21,7 +22,7 @@ export default async function AdvisorPage() {
       ) : !consent ? (
         <ConsentCard />
       ) : (
-        <Chat name={user.displayName} />
+        <Chat name={user.displayName} initialQuestion={sp.q?.slice(0, 500)} />
       )}
       <p className="mt-6 flex items-start gap-2 text-xs text-subtle"><Bot className="mt-0.5 size-3.5 shrink-0" /> Le conseiller fournit des informations calculées à partir de tes données ; ce n&apos;est pas un conseil en investissement réglementé.</p>
     </div>
