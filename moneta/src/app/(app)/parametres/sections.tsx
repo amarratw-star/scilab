@@ -43,7 +43,7 @@ function useDone() {
 
 export function SettingsSections(p: Props) {
   return (
-    <div className="grid gap-8 lg:grid-cols-[180px_1fr]">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[180px_1fr]">
       <nav className="hidden lg:block" aria-label="Sections des paramètres">
         <ul className="sticky top-24 space-y-1 text-sm">
           {SECTIONS.map(([id, l]) => <li key={id}><a href={`#${id}`} className="block rounded-lg px-3 py-1.5 text-muted hover:bg-surface-2 hover:text-foreground">{l}</a></li>)}
@@ -56,7 +56,7 @@ export function SettingsSections(p: Props) {
         <Notifications {...p} />
         <Categories categories={p.categories} />
         <Privacy settings={p.user.settings} ai={p.features.ai} />
-        <Security sessions={p.sessions} isDemo={p.user.isDemo} />
+        <Security sessions={p.sessions} isDemo={p.user.isDemo} timezone={p.user.timezone} />
         <Data {...p} />
         <Integrations features={p.features} />
       </div>
@@ -80,7 +80,7 @@ function Profile({ user }: Props) {
   return (
     <Section id="profil" title="Profil et préférences financières" description={user.email}>
       <form
-        className="grid gap-4 sm:grid-cols-2"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
           const fd = Object.fromEntries(new FormData(e.currentTarget));
@@ -121,7 +121,7 @@ function Dashboard({ hidden }: { hidden: string[] }) {
   const [h, setH] = useState(new Set(hidden));
   return (
     <Section id="tableau-de-bord" title="Personnaliser le tableau de bord" description="Choisis les blocs affichés.">
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {DASH.map(([k, l]) => (
           <label key={k} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 text-sm">
             {l}
@@ -161,7 +161,7 @@ function Notifications({ prefs, prefLabels, features, vapidKey }: Props) {
   };
   return (
     <Section id="notifications" title="Notifications" description="Affichées dans l'application ; envoyées en push si tu l'actives sur cet appareil.">
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {Object.entries(prefLabels).map(([k, l]) => (
           <label key={k} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 text-sm">
             {l}
@@ -248,7 +248,7 @@ function CategoryEditor({ kind, parents, initial, onDone }: { kind: "expense" | 
   const [pending, start] = useTransition();
   return (
     <form
-      className="my-2 grid gap-2 rounded-2xl border border-border bg-surface-2 p-3 sm:grid-cols-[1fr_1fr_110px_90px_auto]"
+      className="my-2 grid grid-cols-1 gap-2 rounded-2xl border border-border bg-surface-2 p-3 sm:grid-cols-[1fr_1fr_110px_90px_auto]"
       onSubmit={(e) => {
         e.preventDefault();
         const fd = Object.fromEntries(new FormData(e.currentTarget));
@@ -293,16 +293,17 @@ function Privacy({ settings, ai }: { settings: UserSettings; ai: boolean }) {
   );
 }
 
-function Security({ sessions, isDemo }: { sessions: Props["sessions"]; isDemo: boolean }) {
+function Security({ sessions, isDemo, timezone }: { sessions: Props["sessions"]; isDemo: boolean; timezone: string }) {
   const done = useDone();
   const [pending, start] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const fmt = (d: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(d));
+  // Fuseau explicite : rendu identique sur le serveur et dans le navigateur (pas d'erreur d'hydratation).
+  const fmt = (d: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: timezone }).format(new Date(d));
   return (
     <Section id="securite" title="Sécurité" description="Mot de passe et sessions ouvertes.">
       {!isDemo && (
         <form
-          className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
           onSubmit={(e) => {
             e.preventDefault();
             const form = e.currentTarget;

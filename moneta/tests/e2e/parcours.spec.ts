@@ -246,5 +246,5 @@ test("démo isolée puis espace vidé", async ({ page }) => {
   }).toPass({ timeout: 20_000 });
   await page.getByRole("button", { name: "Tout supprimer" }).click();
   await page.waitForURL((u) => u.pathname === "/");
-  await expect(page.getByText("Commence par ajouter ton premier compte")).toBeVisible();
+  await expect(page.getByText("Ajoute ton premier compte pour commencer")).toBeVisible();
 });

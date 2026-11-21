@@ -169,7 +169,7 @@ export function Chat({ name, initialQuestion }: { name: string; initialQuestion?
       {messages.length === 0 && (
         <div className="mb-6">
           <p className="text-lg font-medium">Bonjour {name}, que veux-tu savoir ?</p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {SUGGESTIONS.map((s) => (
               <button key={s} onClick={() => send(s)} className="rounded-2xl border border-border bg-surface px-4 py-3 text-left text-sm transition hover:border-border-strong hover:bg-surface-2">{s}</button>
             ))}

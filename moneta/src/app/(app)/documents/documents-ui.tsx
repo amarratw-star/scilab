@@ -44,7 +44,7 @@ export function UploadPanel({ transactions, defaultTransaction }: { transactions
       onDragLeave={() => setDrag(false)}
       onDrop={(e) => { e.preventDefault(); setDrag(false); upload(e.dataTransfer.files); }}
     >
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <label className="text-sm"><span className="mb-1.5 block text-[13px] font-medium">Type</span>
           <Select value={kind} onChange={(e) => setKind(e.target.value)}><option value="receipt">Ticket de caisse</option><option value="invoice">Facture</option><option value="proof">Justificatif</option><option value="other">Document divers</option></Select>
         </label>
@@ -74,7 +74,7 @@ export function DocumentGrid({ docs, transactions }: { docs: Doc[]; transactions
   const router = useRouter();
   const highlight = useSearchParams().get("id");
   return (
-    <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {docs.map((d) => (
         <Card key={d.id} className={`overflow-hidden ${highlight === d.id ? "ring-2 ring-info" : ""}`}>
           <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="flex h-40 items-center justify-center bg-surface-2">

@@ -65,7 +65,7 @@ export default async function WealthPage() {
         <CardHeader><div><CardTitle>Évolution du patrimoine net</CardTitle><CardDescription>Fin de chaque mois : soldes recalculés + dernières valorisations connues à cette date</CardDescription></div></CardHeader>
         <CardContent><NetWorthChart data={history} /></CardContent>
       </Card>
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle>Actifs</CardTitle><span className="tabular text-sm font-semibold">{formatMoney(nw.accountsTotal + nw.assetsTotal)}</span></CardHeader>
           <CardContent>

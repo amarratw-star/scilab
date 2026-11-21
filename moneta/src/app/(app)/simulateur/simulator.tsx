@@ -58,7 +58,7 @@ function Purchase({ available, budgets, avgIncome, avgExpenses }: Props) {
   const sim = useMemo(() => (cents && cents > 0 ? simulatePurchase({ price: cents, available, budget: budgets.find((b) => b.id === budgetId)?.status ?? null, averageMonthlySavings: avgIncome - avgExpenses }) : null), [cents, available, budgets, budgetId, avgIncome, avgExpenses]);
   const tone = sim ? PURCHASE_VERDICT[sim.verdict].tone : "neutral";
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader><div><CardTitle>Est-ce que je peux me le permettre ?</CardTitle><CardDescription>Impact d&apos;un achat sur ton solde, ton épargne et ton budget</CardDescription></div></CardHeader>
         <CardContent className="space-y-4">
@@ -100,7 +100,7 @@ function SavingsGoal({ avgSavings }: { avgSavings: number }) {
   const [rate, setRate] = useState("0");
   const plan = savingsPlan(parseAmountToCents(target) ?? 0, Number(months) || 0, parseAmountToCents(current) ?? 0, (Number(rate.replace(",", ".")) || 0) / 100);
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader><CardTitle>Combien épargner chaque mois ?</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
@@ -137,7 +137,7 @@ function Reduction({ categories }: { categories: Props["categories"] }) {
   const c = categories.find((x) => x.id === cat);
   const series = reductionSavings(red, Math.min(120, Number(months) || 12));
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader><CardTitle>Et si je réduisais une dépense ?</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -171,7 +171,7 @@ function IncomeChange({ avgIncome, avgExpenses, hasHistory }: { avgIncome: numbe
   const [charge, setCharge] = useState("0");
   const r = incomeChangeImpact({ monthlyIncome: avgIncome, monthlyExpenses: avgExpenses, incomeDelta: parseAmountToCents(delta) ?? 0, newFixedCharge: parseAmountToCents(charge) ?? 0 });
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader><div><CardTitle>Changement de revenus ou nouvelle charge</CardTitle><CardDescription>Base : moyennes des 3 derniers mois complets</CardDescription></div></CardHeader>
         <CardContent className="space-y-3">
@@ -248,7 +248,7 @@ function FullScenario({ avgIncome, avgExpenses, base, hasHistory }: Props) {
   const rateNow = avgIncome > 0 ? monthlyNow / avgIncome : null;
   const rateSim = avgIncome + dI > 0 ? monthlySim / (avgIncome + dI) : null;
   return (
-    <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
       <Card>
         <CardHeader><div><CardTitle>Hypothèses</CardTitle><CardDescription>Montants en euros. Base : moyennes des 3 derniers mois complets.</CardDescription></div></CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">

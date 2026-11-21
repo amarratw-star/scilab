@@ -56,7 +56,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       <PageHeader title="Calendrier et trésorerie" description="Quand ton argent entre et sort : chronologie, solde prévisionnel et calendrier mensuel." />
       <Treasury fin={fin} today={today} horizonParam={sp.horizon} cushion={settings.safetyCushion ?? 0} month={monthKey(month)} />
       <h2 className="mb-3 text-[15px] font-semibold">Calendrier mensuel</h2>
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
         <Card>
           <CardHeader className="items-center">
             <CardTitle className="text-lg capitalize">{formatMonthLabel(monthKey(month))}</CardTitle>

@@ -54,7 +54,7 @@ export default async function SavingsPage({ searchParams }: { searchParams: Prom
       {goals.length === 0 ? (
         <EmptyState icon={<Target />} title="Aucun objectif" description="Épargne de sécurité, voyage, ordinateur, apport immobilier… Fixe un montant et une date : MONETA calcule l'effort mensuel nécessaire." />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {goals.map(({ row: g, p, history }) => (
             <Card key={g.id}>
               <CardHeader>

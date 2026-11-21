@@ -108,7 +108,7 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
         </CardHeader>
         <CardContent>
           {opps.length === 0 ? <p className="text-sm text-muted">Aucune opportunité identifiée : il faut au moins un mois complet de dépenses, avec des postes variables d&apos;au moins 30 € par mois.</p> : (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {opps.map((o) => (
                 <Link2 key={o.id} href={o.href} className="card-interactive rounded-xl border border-border p-3">
                   <div className="flex items-start justify-between gap-3"><p className="text-sm font-medium">{o.title}</p><Badge tone="positive" className="shrink-0">≈ {formatMoney(o.annualSaving, undefined, { decimals: false })}{o.kind === "trend" ? " ce mois" : "/an"}</Badge></div>
@@ -121,7 +121,7 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
         </CardContent>
       </Card>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader><div><CardTitle>Revenus et dépenses — 12 derniers mois</CardTitle><CardDescription>{busiest ? `Mois le plus dépensier : ${formatMonthLabel(busiest.month)} (${formatMoney(busiest.expenses)})` : ""}</CardDescription></div></CardHeader>
           <CardContent><MonthlyBars data={series12} /></CardContent>
@@ -182,7 +182,7 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
         </Card>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Lightbulb className="size-4 text-warning" /> Recommandations</CardTitle></CardHeader>
           <CardContent className="space-y-3">

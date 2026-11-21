@@ -179,7 +179,7 @@ export function CategoryDonut({ data, total, height = 200 }: { data: { name: str
   const rest = data.filter((d) => d.amount > 0).slice(7).reduce((s, d) => s + d.amount, 0);
   const rows = rest > 0 ? [...top, { name: "Autres catégories", amount: rest, color: "#94a3b8", share: total ? rest / total : null }] : top;
   return (
-    <div className="grid items-center gap-5 sm:grid-cols-[180px_1fr]">
+    <div className="grid grid-cols-1 items-center gap-5 sm:grid-cols-[180px_1fr]">
       <ChartFrame height={height} label="Répartition des dépenses par catégorie">
         <div className="relative h-full">
           <ResponsiveContainer width="100%" height="100%">

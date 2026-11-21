@@ -35,7 +35,7 @@ export default async function AvailablePage() {
             <Stat label="Montant de sécurité" accent="warning" value={<Money cents={av.safetyCushion} />} hint={<Link href="/parametres" className="hover:text-foreground">Modifier dans les paramètres →</Link>} />
           </div>
           {av.warnings.map((w) => <Callout key={w} tone="warning" className="mt-4" title={w} />)}
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader><div><CardTitle>Le calcul, étape par étape</CardTitle><CardDescription>Aucun revenu attendu n&apos;est compté comme de l&apos;argent disponible</CardDescription></div></CardHeader>
               <CardContent>

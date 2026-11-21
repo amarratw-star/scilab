@@ -71,7 +71,7 @@ export default async function SubscriptionsPage() {
       {findings.length > 0 && (
         <section className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold"><Sparkles className="size-4 text-warning" /> Économies potentielles à vérifier</h2>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {findings.map((f, i) => (
               <Callout key={i} tone={f.type === "untracked" ? "info" : "warning"} icon={f.type === "untracked" ? <Search /> : <Repeat />} title={f.title}>
                 <p>{f.detail}</p>

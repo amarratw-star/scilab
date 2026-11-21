@@ -114,7 +114,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {/* Niveau 1 : les quatre indicateurs essentiels */}
       {!hidden.has("kpis") && hasAccounts && (
-        <section aria-label="Indicateurs principaux" className="stagger grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
+        <section aria-label="Indicateurs principaux" className="stagger grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
           <HeroStat
             label="Argent disponible"
             accent="info"
@@ -168,7 +168,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </section>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      {!hidden.has("actions") && hasAccounts && <div className="hidden lg:block"><QuickActions /></div>}
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {!hidden.has("chart") && (
           <Card className="xl:col-span-2">
             <CardHeader className="flex-col sm:flex-row sm:items-start">
@@ -198,7 +200,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
         {!hidden.has("summary") && (
           <Card className="overflow-hidden border-transparent bg-[image:var(--hero-gradient)] text-[var(--hero-foreground)]">
             <CardHeader>
@@ -251,7 +253,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {!hidden.has("alerts") && (
           <Card>
             <CardHeader>
@@ -306,7 +308,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
         {!hidden.has("categories") && (
           <Card className="xl:col-span-2">
             <CardHeader>
@@ -342,7 +344,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {!hidden.has("recent") && (
           <Card>
             <CardHeader>
@@ -393,7 +395,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         )}
       </div>
 
-      {!hidden.has("actions") && <div className="lg:hidden"><QuickActions /></div>}
+      
     </div>
   );
 }

@@ -60,7 +60,7 @@ export function Treasury({ fin, today, horizonParam, cushion, month }: { fin: Fi
       ) : (
         <Callout tone="positive" icon={<CheckCircle2 />} title="Aucun jour à risque identifié sur la période">Point bas estimé : {formatMoney(f.lowestNormal.balance)} le {formatDateFR(f.lowestNormal.date)} (scénario normal).</Callout>
       )}
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
         <Card>
           <CardHeader>
             <div>

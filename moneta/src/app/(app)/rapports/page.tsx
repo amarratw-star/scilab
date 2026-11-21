@@ -52,11 +52,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               <Stat label="Taux d'épargne" value={formatPct(r.totals.savingsRate)} hint={`avant : ${formatPct(r.previous.savingsRate)}`} />
             </div>
           </section>
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <section><h3 className="mb-3 text-sm font-semibold">2–3. Revenus et dépenses</h3><MonthlyBars data={r.series} height={220} /></section>
             <section><h3 className="mb-3 text-sm font-semibold">5. Répartition par catégorie</h3>{r.byCategory.length ? <CategoryDonut data={r.byCategory} total={r.totals.netExpenses} /> : <p className="text-sm text-muted">Aucune dépense.</p>}</section>
           </div>
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <section>
               <h3 className="mb-2 text-sm font-semibold">4. Épargne et objectifs</h3>
               <ul className="space-y-1 text-sm">{r.goals.length ? r.goals.map((g) => <li key={g.goal.id} className="flex justify-between"><span>{g.goal.name}</span><span className="tabular">{formatPct(g.progress.progress, 0)}</span></li>) : <li className="text-muted">Aucun objectif.</li>}</ul>

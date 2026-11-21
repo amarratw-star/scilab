@@ -10,18 +10,18 @@ export type Trend = { kind: "pct"; value: number; good: boolean; label: string }
 export function HeroStat({ label, value, definition, tip, trend, href, hrefLabel = "Détails", accent, hint }: { label: string; value: React.ReactNode; definition: string; tip?: React.ReactNode; trend: Trend; href: string; hrefLabel?: string; accent: "info" | "negative" | "positive" | "savings"; hint?: React.ReactNode }) {
   const dot = { info: "bg-info", negative: "bg-negative", positive: "bg-positive", savings: "bg-[var(--chart-savings)]" }[accent];
   return (
-    <div className="card-interactive group relative flex min-w-0 flex-col rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-[var(--shadow-card)] sm:p-5">
+    <div className="card-interactive group relative flex min-w-0 flex-col rounded-[var(--radius-card)] border border-border bg-surface p-3.5 shadow-[var(--shadow-card)] sm:p-5">
       <div className="flex items-center gap-1.5 text-[13px] font-medium text-muted">
         <span className={cn("size-2 rounded-full", dot)} aria-hidden />
-        <span className="truncate">{label}</span>
+        <span className="truncate text-[12px] sm:text-[13px]">{label}</span>
         {tip && <InfoTip>{tip}</InfoTip>}
       </div>
-      <div className="amount-hero mt-2 truncate text-[26px] sm:text-[30px]">{value}</div>
-      <p className="mt-1 line-clamp-2 text-xs text-subtle">{definition}</p>
-      <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+      <div className="amount-hero mt-2 truncate text-[21px] min-[400px]:text-[23px] sm:text-[30px]">{value}</div>
+      <p className="mt-1 line-clamp-2 hidden text-xs text-subtle sm:block">{definition}</p>
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pt-3">
         <TrendChip trend={trend} />
-        <Link href={href} className="flex items-center gap-0.5 rounded-md text-xs font-medium text-muted transition hover:text-foreground" aria-label={`${hrefLabel} : ${label}`}>
-          {hrefLabel} <ArrowRight className="size-3 transition group-hover:translate-x-0.5" />
+        <Link href={href} className="ml-auto flex items-center gap-0.5 rounded-md text-xs font-medium text-muted transition hover:text-foreground" aria-label={`${hrefLabel} : ${label}`}>
+          <span className="hidden min-[400px]:inline">{hrefLabel}</span> <ArrowRight className="size-3 transition group-hover:translate-x-0.5" />
         </Link>
       </div>
       {hint && <div className="mt-2 text-xs text-muted">{hint}</div>}

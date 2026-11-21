@@ -43,12 +43,12 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
             <Stat label="Épargne" accent="positive" value={<Money cents={fin.summary.savings} />} hint="Livrets" />
             <Stat label="Placements" value={<Money cents={fin.summary.investments} />} hint="Investissements et placements" />
           </div>
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
             <div className="space-y-6">
               {groups.map(([type, list]) => (
                 <section key={type}>
                   <h2 className="mb-2 text-sm font-medium text-muted">{ACCOUNT_TYPE_LABELS[type]}</h2>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {list.map((a) => (
                       <Link key={a.id} href={`/comptes/${a.id}`} className="group rounded-[var(--radius-card)] border border-border bg-surface p-4 transition hover:border-border-strong hover:shadow-sm">
                         <div className="flex items-center gap-3">

@@ -24,7 +24,7 @@ export default async function HealthPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader title="Santé financière" description="Une note indicative sur 100, calculée à partir de ratios objectifs. Ce n'est pas un diagnostic financier officiel." />
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
         <Card>
           <CardContent className="flex flex-col items-center pt-6 text-center">
             <HealthRing score={h.score} size={156} />

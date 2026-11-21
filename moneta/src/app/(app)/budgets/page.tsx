@@ -37,7 +37,7 @@ export default async function BudgetsPage() {
       {statuses.length === 0 ? (
         <EmptyState icon={<Gauge />} title="Aucun budget" description="Crée un budget global mensuel ou des budgets par catégorie (restaurants, courses, loisirs…). Tu seras alerté à 50, 75, 90 et 100 %." />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {statuses.map((b) => {
             const recent = fin.txs
               .filter((t) => t.status === "posted" && t.kind === "expense" && t.date >= b.from && t.date <= b.to && (!b.budget.categoryId || categoryMatches(t.categoryId, b.budget.categoryId, fin.cmap)))

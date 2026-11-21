@@ -22,7 +22,7 @@ export function CategoryBreakdown({ rows, total, from, to }: { rows: CategoryRow
   };
   const focused = active !== null ? data[active] : null;
   return (
-    <div className="grid items-center gap-5 sm:grid-cols-[176px_1fr]">
+    <div className="grid grid-cols-1 items-center gap-5 sm:grid-cols-[176px_1fr]">
       <div className="relative mx-auto size-44" role="img" aria-label="Répartition des dépenses par catégorie">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

@@ -105,7 +105,7 @@ export function ImportWizard() {
     <div className="space-y-4">
       <Card>
         <CardHeader><div><CardTitle>1. Fichier et compte</CardTitle><CardDescription>Formats acceptés : CSV (séparateur ; , ou tabulation), encodage UTF-8 ou Windows-1252.</CardDescription></div></CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
+        <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Compte de destination" htmlFor="iacc">
             <Select id="iacc" value={accountId} onChange={(e) => { setAccountId(e.target.value); setRows(null); }}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select>
           </Field>

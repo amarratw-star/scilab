@@ -62,7 +62,7 @@ export default async function ForecastPage({ searchParams }: { searchParams: Pro
         <CardHeader><div><CardTitle>Solde prévisionnel — {scope === "liquid" ? "argent disponible" : "tous les comptes"}</CardTitle><CardDescription>Fiabilité : <Badge tone={f.reliability === "good" ? "positive" : "warning"}>{f.reliability === "good" ? "bonne" : f.reliability === "limited" ? "limitée" : "insuffisante"}</Badge></CardDescription></div></CardHeader>
         <CardContent><ForecastChart data={f.points} cushion={scope === "liquid" ? settings.safetyCushion : undefined} /></CardContent>
       </Card>
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle>Points d&apos;attention</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">

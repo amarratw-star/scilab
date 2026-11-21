@@ -103,7 +103,7 @@ export function Scanner({ cloudAvailable, cloudAllowed }: { cloudAvailable: bool
 
   const mode: "local" | "cloud" = cloudAvailable && cloudAllowed ? "cloud" : "local";
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader><div><CardTitle>1. Photo du ticket</CardTitle><CardDescription>{mode === "cloud" ? "Analyse par l'IA (activée dans tes paramètres)." : "Analyse locale : l'image ne quitte pas ton appareil pendant la lecture."}</CardDescription></div></CardHeader>
         <CardContent>
