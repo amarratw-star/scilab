@@ -107,7 +107,7 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
           </div>
         </CardHeader>
         <CardContent>
-          {opps.length === 0 ? <p className="text-sm text-muted">Aucune opportunité identifiée : il faut au moins un mois complet de dépenses, avec des postes variables d&apos;au moins 30 € par mois.</p> : (
+          {opps.length === 0 ? <p className="text-sm text-muted">Aucune opportunité identifiée : il faut au moins un mois complet de dépenses, avec des postes variables d&apos;au moins {formatMoney(3000)} par mois.</p> : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {opps.map((o) => (
                 <Link2 key={o.id} href={o.href} className="card-interactive rounded-xl border border-border p-3">

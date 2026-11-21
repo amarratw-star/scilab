@@ -97,8 +97,8 @@ export function FilterBar({ accounts, tags }: { accounts: { id: string; name: st
             <option value="planned">Prévues</option>
             <option value="cancelled">Annulées</option>
           </Select>
-          <Input inputMode="decimal" placeholder="Montant min (€)" defaultValue={sp.get("min") ?? ""} onBlur={(e) => set({ min: e.target.value || null })} aria-label="Montant minimum" />
-          <Input inputMode="decimal" placeholder="Montant max (€)" defaultValue={sp.get("max") ?? ""} onBlur={(e) => set({ max: e.target.value || null })} aria-label="Montant maximum" />
+          <Input inputMode="decimal" placeholder="Montant min" defaultValue={sp.get("min") ?? ""} onBlur={(e) => set({ min: e.target.value || null })} aria-label="Montant minimum" />
+          <Input inputMode="decimal" placeholder="Montant max" defaultValue={sp.get("max") ?? ""} onBlur={(e) => set({ max: e.target.value || null })} aria-label="Montant maximum" />
           {tags.length > 0 && (
             <Select aria-label="Tag" value={sp.get("tag") ?? ""} onChange={(e) => set({ tag: e.target.value || null })}>
               <option value="">Tous les tags</option>

@@ -69,7 +69,7 @@ export function AccountActions({ account, balance, today, txCount }: { account: 
                 <p className="tabular text-2xl font-semibold">{formatMoney(balance)}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Solde réel constaté (€)" htmlFor="actual">
+                <Field label="Solde réel constaté" htmlFor="actual">
                   <Input id="actual" inputMode="decimal" value={actual} onChange={(e) => setActual(e.target.value)} placeholder="0,00" autoFocus />
                 </Field>
                 <Field label="Date" htmlFor="rdate">

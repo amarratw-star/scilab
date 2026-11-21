@@ -51,7 +51,7 @@ export function NewWealthItem({ today }: { today: string }) {
                 <Select id="wc" name="category">{Object.entries(kind === "asset" ? ASSET_CATEGORIES : LIABILITY_CATEGORIES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select>
               </Field>
               <Field label="Nom" htmlFor="wn" error={errors.name}><Input id="wn" name="name" required maxLength={80} placeholder={kind === "asset" ? "Appartement" : "Prêt immobilier"} /></Field>
-              <Field label={kind === "asset" ? "Valeur actuelle (€)" : "Capital restant dû (€)"} htmlFor="wv" error={errors.value}><Input id="wv" name="value" inputMode="decimal" required /></Field>
+              <Field label={kind === "asset" ? "Valeur actuelle" : "Capital restant dû"} htmlFor="wv" error={errors.value}><Input id="wv" name="value" inputMode="decimal" required /></Field>
               <Field label="Date de la valeur" htmlFor="wd"><Input id="wd" name="date" type="date" defaultValue={today} required /></Field>
             </div>
             <Field label="Nature de la valeur" htmlFor="wm">
@@ -100,7 +100,7 @@ export function WealthItemActions({ item, history, today }: { item: { id: string
               }}
             >
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Nouvelle valeur (€)" htmlFor="vv"><Input id="vv" name="value" inputMode="decimal" required autoFocus /></Field>
+                <Field label="Nouvelle valeur" htmlFor="vv"><Input id="vv" name="value" inputMode="decimal" required autoFocus /></Field>
                 <Field label="Date" htmlFor="vd"><Input id="vd" name="date" type="date" defaultValue={today} required /></Field>
               </div>
               <Field label="Nature" htmlFor="vm"><Select id="vm" name="method"><option value="manual">Valeur connue</option><option value="estimated">Estimation</option></Select></Field>

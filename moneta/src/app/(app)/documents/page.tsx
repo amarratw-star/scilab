@@ -5,6 +5,7 @@ import { requireUser } from "@/server/auth/session";
 import { runAsUser } from "@/server/services/context";
 import { listDocuments, DOC_KINDS } from "@/server/services/documents";
 import * as s from "@/server/db/schema";
+import { formatMoneyPlain } from "@/lib/money";
 import { EmptyState, PageHeader } from "@/components/ui/misc";
 import { DocumentGrid, UploadPanel, DocSearch } from "./documents-ui";
 
@@ -18,7 +19,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
     docs: await listDocuments(ctx, sp.q, txFilter),
     txs: await ctx.tx.select({ id: s.transactions.id, date: s.transactions.date, amount: s.transactions.amount, kind: s.transactions.kind, label: s.transactions.description, merchant: s.transactions.merchant }).from(s.transactions).orderBy(desc(s.transactions.date)).limit(150),
   }));
-  const txOptions = txs.map((t) => ({ id: t.id, label: `${t.date.split("-").reverse().join("/")} · ${t.merchant || t.label || "Opération"} · ${(t.amount / 100).toFixed(2).replace(".", ",")} €` }));
+  const txOptions = txs.map((t) => ({ id: t.id, label: `${t.date.split("-").reverse().join("/")} · ${t.merchant || t.label || "Opération"} · ${formatMoneyPlain(t.amount)}` }));
   const docsView = docs.map((d) => ({ ...d, createdAt: d.createdAt.toISOString(), kindLabel: DOC_KINDS[d.kind] ?? d.kind }));
   return (
     <div>

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronDown, Repeat } from "lucide-react";
@@ -10,7 +10,8 @@ import { Segmented } from "@/components/ui/segmented";
 import { IconBadge } from "@/components/ui/icon";
 import { useRefData } from "@/components/app/app-shell";
 import { saveTransactionAction, saveRecurringAction, resolveOccurrenceAction } from "@/app/actions/finance";
-import { centsToInput } from "@/lib/money";
+import { centsToInput, currencySymbol } from "@/lib/money";
+import { useCurrency } from "@/components/app/currency";
 import { cn } from "@/lib/utils";
 import { PAYMENT_METHOD_LABELS, KIND_LABELS } from "@/lib/labels";
 
@@ -37,7 +38,15 @@ export function QuickAddDialog({ open, onOpenChange, preset }: { open: boolean; 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {open && (
-        <DialogContent title={preset?.editId ? "Modifier l'opération" : "Nouvelle opération"} description={preset?.editId ? undefined : "Montant, catégorie, c'est parti."}>
+        <DialogContent
+          title={preset?.editId ? "Modifier l'opération" : "Nouvelle opération"}
+          description={preset?.editId ? undefined : "Montant, catégorie, c'est parti."}
+          onOpenAutoFocus={(e) => {
+            // Focus immédiat et déterministe sur le montant (pas de minuteur : évite de voler le focus pendant la saisie).
+            e.preventDefault();
+            document.getElementById("amount")?.focus();
+          }}
+        >
           <TransactionForm preset={preset} onDone={() => onOpenChange(false)} />
         </DialogContent>
       )}
@@ -47,6 +56,7 @@ export function QuickAddDialog({ open, onOpenChange, preset }: { open: boolean; 
 
 export function TransactionForm({ preset, onDone }: { preset?: QuickAddPreset; onDone?: () => void }) {
   const { accounts, categories, today } = useRefData();
+  const currency = useCurrency();
   const router = useRouter();
   const [kind, setKind] = useState<TxKindUI>(preset?.kind ?? "expense");
   const [amount, setAmount] = useState(preset?.amount ? centsToInput(Math.abs(preset.amount)) : "");
@@ -68,10 +78,6 @@ export function TransactionForm({ preset, onDone }: { preset?: QuickAddPreset; o
   const [pending, start] = useTransition();
   const amountRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => amountRef.current?.focus(), 80);
-    return () => clearTimeout(t);
-  }, []);
 
   const catKind = kind === "income" ? "income" : "expense";
   const parents = useMemo(() => categories.filter((c) => c.kind === catKind && !c.parentId), [categories, catKind]);
@@ -177,7 +183,7 @@ export function TransactionForm({ preset, onDone }: { preset?: QuickAddPreset; o
             aria-invalid={Boolean(errors.amount)}
             className="tabular w-48 bg-transparent text-center text-5xl font-semibold tracking-tight outline-none placeholder:text-surface-3"
           />
-          <span className="text-2xl font-medium text-muted">€</span>
+          <span className="text-2xl font-medium text-muted">{currencySymbol(currency)}</span>
         </div>
         {errors.amount && <p className="mt-1 text-xs text-negative">{errors.amount}</p>}
         {kind === "adjustment" && <p className="mt-1 text-xs text-muted">Montant signé : négatif pour diminuer le solde.</p>}

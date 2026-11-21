@@ -164,3 +164,12 @@ export function sumCents(values: Iterable<number>): Cents {
   for (const v of values) total += v;
   return total;
 }
+
+/** Symbole d'une devise ("€", "$", "£", "CHF"…). */
+export function currencySymbol(currency: string = defaultCurrency()): string {
+  try {
+    return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).formatToParts(0).find((p) => p.type === "currency")?.value ?? currency;
+  } catch {
+    return currency;
+  }
+}

@@ -62,7 +62,7 @@ function Purchase({ available, budgets, avgIncome, avgExpenses }: Props) {
       <Card>
         <CardHeader><div><CardTitle>Est-ce que je peux me le permettre ?</CardTitle><CardDescription>Impact d&apos;un achat sur ton solde, ton épargne et ton budget</CardDescription></div></CardHeader>
         <CardContent className="space-y-4">
-          <Field label="Prix de l'achat (€)" htmlFor="price"><Input id="price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="900" autoFocus /></Field>
+          <Field label="Prix de l'achat" htmlFor="price"><Input id="price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="900" autoFocus /></Field>
           <Field label="Budget concerné (facultatif)" htmlFor="pb">
             <Select id="pb" value={budgetId} onChange={(e) => setBudgetId(e.target.value)}>
               <option value="">Aucun</option>
@@ -104,9 +104,9 @@ function SavingsGoal({ avgSavings }: { avgSavings: number }) {
       <Card>
         <CardHeader><CardTitle>Combien épargner chaque mois ?</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
-          <Field label="Montant cible (€)" htmlFor="st"><Input id="st" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} /></Field>
+          <Field label="Montant cible" htmlFor="st"><Input id="st" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} /></Field>
           <Field label="Durée (mois)" htmlFor="sm"><Input id="sm" inputMode="numeric" value={months} onChange={(e) => setMonths(e.target.value)} /></Field>
-          <Field label="Déjà épargné (€)" htmlFor="sc"><Input id="sc" inputMode="decimal" value={current} onChange={(e) => setCurrent(e.target.value)} /></Field>
+          <Field label="Déjà épargné" htmlFor="sc"><Input id="sc" inputMode="decimal" value={current} onChange={(e) => setCurrent(e.target.value)} /></Field>
           <Field label="Rendement annuel (%)" htmlFor="sr" hint="Ex. taux d'un livret. 0 si aucun."><Input id="sr" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} /></Field>
         </CardContent>
       </Card>
@@ -148,7 +148,7 @@ function Reduction({ categories }: { categories: Props["categories"] }) {
             </Select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Réduction par mois (€)" htmlFor="ra"><Input id="ra" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
+            <Field label="Réduction par mois" htmlFor="ra"><Input id="ra" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
             <Field label="Sur combien de mois" htmlFor="rm"><Input id="rm" inputMode="numeric" value={months} onChange={(e) => setMonths(e.target.value)} /></Field>
           </div>
         </CardContent>
@@ -176,8 +176,8 @@ function IncomeChange({ avgIncome, avgExpenses, hasHistory }: { avgIncome: numbe
         <CardHeader><div><CardTitle>Changement de revenus ou nouvelle charge</CardTitle><CardDescription>Base : moyennes des 3 derniers mois complets</CardDescription></div></CardHeader>
         <CardContent className="space-y-3">
           {!hasHistory && <Callout tone="neutral" icon={<Info />}>Pas encore assez d&apos;historique : les moyennes sont à zéro.</Callout>}
-          <Field label="Variation de revenu mensuel (€, négatif possible)" htmlFor="id"><Input id="id" inputMode="decimal" value={delta} onChange={(e) => setDelta(e.target.value)} /></Field>
-          <Field label="Nouvelle charge fixe mensuelle (€)" htmlFor="ic"><Input id="ic" inputMode="decimal" value={charge} onChange={(e) => setCharge(e.target.value)} /></Field>
+          <Field label="Variation de revenu mensuel (négatif possible)" htmlFor="id"><Input id="id" inputMode="decimal" value={delta} onChange={(e) => setDelta(e.target.value)} /></Field>
+          <Field label="Nouvelle charge fixe mensuelle" htmlFor="ic"><Input id="ic" inputMode="decimal" value={charge} onChange={(e) => setCharge(e.target.value)} /></Field>
         </CardContent>
       </Card>
       <Card>

@@ -61,7 +61,7 @@ function BudgetForm({ initial, onDone }: { initial?: B; onDone: () => void }) {
         <Input id="bname" value={name} onChange={(e) => setName(e.target.value)} placeholder={categoryId ? categories.find((c) => c.id === categoryId)?.name : "Budget global"} maxLength={60} />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Montant (€)" htmlFor="amount" error={errors.amount}>
+        <Field label="Montant" htmlFor="amount" error={errors.amount}>
           <Input id="amount" name="amount" inputMode="decimal" defaultValue={initial ? centsToInput(initial.amount) : ""} required placeholder="150" />
         </Field>
         <Field label="Période" htmlFor="period">

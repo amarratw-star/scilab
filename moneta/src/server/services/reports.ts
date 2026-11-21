@@ -3,7 +3,7 @@
  */
 import "server-only";
 import { addDays, addMonths, endOfMonth, endOfYear, formatDateFR, formatMonthLabel, startOfMonth, startOfYear, type ISODate } from "@/lib/dates";
-import { formatMoneyPlain, formatPct } from "@/lib/money";
+import { currencySymbol, formatMoneyPlain, formatPct } from "@/lib/money";
 import { expensesByCategory, incomeByCategory, monthlySeries, periodTotals, comparablePreviousPeriod, topExpenses } from "@/lib/finance/stats";
 import { computeBalances, summarizeBalances } from "@/lib/finance/ledger";
 import { goalProgress } from "@/lib/finance/goals";
@@ -105,7 +105,7 @@ export async function reportXlsx(fin: Finance, report: Report): Promise<Buffer> 
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = "MONETA";
-  const money = '#,##0.00 "€"';
+  const money = `#,##0.00 "${currencySymbol()}"`;
   const summary = wb.addWorksheet("Résumé");
   summary.columns = [{ header: "Indicateur", key: "k", width: 36 }, { header: "Valeur", key: "v", width: 18, style: { numFmt: money } }];
   summary.addRows([

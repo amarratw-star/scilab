@@ -52,7 +52,7 @@ export function AccountForm({ initial, today, onDone }: { initial?: AccountFormV
         <Field label="Banque / établissement" htmlFor="institution">
           <Input id="institution" name="institution" defaultValue={initial?.institution ?? ""} maxLength={80} />
         </Field>
-        <Field label="Solde initial (€)" htmlFor="initialBalance" error={errors.initialBalance} hint="Solde à la date d'ouverture ci-contre">
+        <Field label="Solde initial" htmlFor="initialBalance" error={errors.initialBalance} hint="Solde à la date d'ouverture ci-contre">
           <Input id="initialBalance" name="initialBalance" inputMode="decimal" defaultValue={initial ? centsToInput(initial.initialBalance) : ""} placeholder="0,00" required />
         </Field>
         <Field label="Date d'ouverture / de départ" htmlFor="openedOn" error={errors.openedOn}>

@@ -49,7 +49,7 @@ function RecurringForm({ initial, preset, onDone }: { initial?: R; preset?: { na
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Nom" htmlFor="rname" error={errors.name}><Input id="rname" name="name" required defaultValue={initial?.name ?? preset?.name} placeholder="Abonnement musique" /></Field>
-        <Field label="Montant (€)" htmlFor="ramount" error={errors.amount}><Input id="ramount" name="amount" inputMode="decimal" required defaultValue={initial ? centsToInput(initial.amount) : preset?.amount ? centsToInput(preset.amount) : ""} /></Field>
+        <Field label="Montant" htmlFor="ramount" error={errors.amount}><Input id="ramount" name="amount" inputMode="decimal" required defaultValue={initial ? centsToInput(initial.amount) : preset?.amount ? centsToInput(preset.amount) : ""} /></Field>
         <Field label="Fréquence" htmlFor="rfreq">
           <Select id="rfreq" name="frequency" defaultValue={initial?.frequency ?? "monthly"}>
             <option value="weekly">Hebdomadaire</option><option value="monthly">Mensuelle</option><option value="quarterly">Trimestrielle</option><option value="semiannual">Semestrielle</option><option value="yearly">Annuelle</option>

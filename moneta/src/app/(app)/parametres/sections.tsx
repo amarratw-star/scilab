@@ -99,8 +99,8 @@ function Profile({ user }: Props) {
           <Select id="ptz" name="timezone" defaultValue={user.timezone}>{(TIMEZONES.includes(user.timezone) ? TIMEZONES : [user.timezone, ...TIMEZONES]).map((t) => <option key={t} value={t}>{t}</option>)}</Select>
         </Field>
         <Field label="Langue" htmlFor="plang" hint="Le français est la seule langue disponible pour l'instant."><Select id="plang" disabled defaultValue="fr"><option value="fr">Français</option></Select></Field>
-        <Field label="Coussin de sécurité (€)" htmlFor="pcush" error={errors.safetyCushion} hint="Montant à toujours conserver sur tes comptes disponibles."><Input id="pcush" name="safetyCushion" inputMode="decimal" defaultValue={centsToInput(user.settings.safetyCushion ?? 0)} /></Field>
-        <Field label="Objectif d'épargne mensuel (€)" htmlFor="psave" error={errors.monthlySavingsTarget} hint="Préservé dans le calcul « Combien puis-je dépenser ? »."><Input id="psave" name="monthlySavingsTarget" inputMode="decimal" defaultValue={centsToInput(user.settings.monthlySavingsTarget ?? 0)} /></Field>
+        <Field label="Coussin de sécurité" htmlFor="pcush" error={errors.safetyCushion} hint="Montant à toujours conserver sur tes comptes disponibles."><Input id="pcush" name="safetyCushion" inputMode="decimal" defaultValue={centsToInput(user.settings.safetyCushion ?? 0)} /></Field>
+        <Field label="Objectif d'épargne mensuel" htmlFor="psave" error={errors.monthlySavingsTarget} hint="Préservé dans le calcul « Combien puis-je dépenser ? »."><Input id="psave" name="monthlySavingsTarget" inputMode="decimal" defaultValue={centsToInput(user.settings.monthlySavingsTarget ?? 0)} /></Field>
         <div className="sm:col-span-2"><Button type="submit" loading={pending}>Enregistrer</Button></div>
       </form>
     </Section>

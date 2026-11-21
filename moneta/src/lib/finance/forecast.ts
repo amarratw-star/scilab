@@ -1,3 +1,4 @@
+import { formatMoneyPlain } from "@/lib/money";
 /**
  * Prévisions de solde.
  *
@@ -230,7 +231,7 @@ export function forecast(input: ForecastInput): ForecastResult {
     `Point de départ : solde réel actuel du périmètre choisi.`,
     `Flux connus : ${items.length} échéance(s) récurrente(s) et opérations prévues sur la période.`,
     useVariable
-      ? `Dépenses variables : ${(history.variableDailyMean / 100).toFixed(2).replace(".", ",")} €/jour en moyenne sur ${history.historyDays} jours d'historique.`
+      ? `Dépenses variables : ${formatMoneyPlain(Math.round(history.variableDailyMean))}/jour en moyenne sur ${history.historyDays} jours d'historique.`
       : `Dépenses variables non projetées : moins de ${MIN_HISTORY_DAYS} jours d'historique (${history.historyDays} j). La courbe ne reflète que les flux connus et sera donc trop optimiste.`,
     "Revenus irréguliers exclus des scénarios prudent et normal.",
     "Les échéances passées de ce mois non confirmées sont supposées encore à payer.",

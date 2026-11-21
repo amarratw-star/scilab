@@ -47,11 +47,12 @@ async function quickAdd(page: Page, opts: { kind?: "Dépense" | "Revenu" | "Tran
   await page.getByRole("button", { name: /Ajouter une opération/ }).first().click();
   const dialog = page.getByRole("dialog");
   if (opts.kind && opts.kind !== "Dépense") await dialog.getByRole("radio", { name: opts.kind }).click();
-  await dialog.getByLabel("Montant").fill(opts.amount);
+  await dialog.getByLabel("Montant", { exact: true }).fill(opts.amount);
   if (opts.category) await dialog.getByLabel("Catégorie").selectOption({ label: opts.category });
   if (opts.account) await dialog.locator("#account").selectOption({ label: opts.account });
   if (opts.to) await dialog.locator("#toAccount").selectOption({ label: opts.to });
   await dialog.getByLabel(/Description|Source/).fill(opts.description);
+  await expect(dialog.getByLabel("Montant", { exact: true })).toHaveValue(opts.amount);
   await dialog.getByRole("button", { name: /^Enregistrer$/ }).click();
   await expect(dialog).toBeHidden();
 }
@@ -67,7 +68,7 @@ test("inscription, premier compte et tableau de bord", async ({ page }) => {
   await register(page, alice);
   await page.getByRole("button", { name: "Commencer" }).click();
   await page.getByLabel("Nom du compte").fill("Compte courant");
-  await page.getByLabel("Solde initial (€)").fill("1 500,00");
+  await page.getByLabel("Solde initial").fill("1 500,00");
   await page.getByRole("button", { name: "Créer le compte" }).click();
   await page.waitForURL((u) => u.pathname === "/");
   await expect(page.getByRole("heading", { name: /Bonjour Alice/ })).toBeVisible();
@@ -90,7 +91,7 @@ test("modification puis suppression d'une opération", async ({ page }) => {
   await page.goto("/transactions");
   await page.getByRole("button", { name: /Modifier Dîner test/ }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Montant").fill("50");
+  await dialog.getByLabel("Montant", { exact: true }).fill("50");
   await dialog.getByRole("button", { name: "Enregistrer les modifications" }).click();
   await expect(page.getByText("-50,00 €")).toBeVisible();
   page.once("dialog", (d) => d.accept());
@@ -107,7 +108,7 @@ test("transfert entre comptes : ni dépense ni revenu", async ({ page }) => {
   await page.getByRole("button", { name: "Nouveau compte" }).click();
   await page.getByLabel("Nom du compte").fill("Livret A");
   await page.getByLabel("Type").selectOption("savings");
-  await page.getByLabel("Solde initial (€)").fill("0");
+  await page.getByLabel("Solde initial").fill("0");
   await page.getByRole("button", { name: "Créer le compte" }).click();
   await page.waitForURL(/\/comptes\/[0-9a-f-]{36}/);
   await quickAdd(page, { kind: "Transfert", amount: "300", account: "Compte courant", to: "Livret A", description: "Épargne du mois" });
@@ -126,7 +127,7 @@ test("budget mis à jour automatiquement", async ({ page }) => {
   await page.getByRole("button", { name: "Nouveau budget" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Catégorie").selectOption({ label: "Restaurants" });
-  await dialog.getByLabel("Montant (€)").fill("100");
+  await dialog.getByLabel("Montant", { exact: true }).fill("100");
   await dialog.getByRole("button", { name: "Créer le budget" }).click();
   await expect(page.getByText("80,00 €").first()).toBeVisible();
   await expect(page.getByText(/80 % · À surveiller/)).toBeVisible();
@@ -137,11 +138,11 @@ test("objectif d'épargne et versement", async ({ page }) => {
   await page.goto("/epargne?nouveau=1");
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Nom de l'objectif").fill("Voyage");
-  await dialog.getByLabel("Montant cible (€)").fill("1000");
+  await dialog.getByLabel("Montant cible").fill("1000");
   await dialog.getByRole("button", { name: "Créer l'objectif" }).click();
   await expect(page.getByText("Voyage")).toBeVisible();
   await page.getByRole("button", { name: "Déposer" }).first().click();
-  await page.getByRole("dialog").getByLabel("Montant (€)").fill("250");
+  await page.getByRole("dialog").getByLabel("Montant", { exact: true }).fill("250");
   await page.getByRole("dialog").getByRole("button", { name: "Déposer" }).click();
   await expect(page.getByText("25 % · reste 750,00 €")).toBeVisible();
 });
@@ -152,7 +153,7 @@ test("échéance récurrente : confirmation du paiement", async ({ page }) => {
   await page.getByRole("button", { name: "Nouvelle échéance" }).click();
   const d = page.getByRole("dialog");
   await d.getByLabel("Nom").fill("Musique");
-  await d.getByLabel("Montant (€)").fill("10,99");
+  await d.getByLabel("Montant", { exact: true }).fill("10,99");
   await d.getByRole("button", { name: "Ajouter" }).click();
   await expect(page.getByText("Échéances à traiter")).toBeVisible();
   await page.getByRole("button", { name: "Payé" }).first().click();

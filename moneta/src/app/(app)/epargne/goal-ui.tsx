@@ -44,7 +44,7 @@ function GoalForm({ initial, accounts, onDone }: { initial?: G; accounts: Acc[];
       <Field label="Nom de l'objectif" htmlFor="gname" error={errors.name}><Input id="gname" name="name" defaultValue={initial?.name} required placeholder="Voyage au Japon" maxLength={80} /></Field>
       <Field label="Description" htmlFor="gdesc"><Textarea id="gdesc" name="description" rows={2} defaultValue={initial?.description ?? ""} /></Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Montant cible (€)" htmlFor="target" error={errors.targetAmount}><Input id="target" name="targetAmount" inputMode="decimal" required defaultValue={initial ? centsToInput(initial.targetAmount) : ""} /></Field>
+        <Field label="Montant cible" htmlFor="target" error={errors.targetAmount}><Input id="target" name="targetAmount" inputMode="decimal" required defaultValue={initial ? centsToInput(initial.targetAmount) : ""} /></Field>
         <Field label="Priorité" htmlFor="prio">
           <Select id="prio" name="priority" defaultValue={String(initial?.priority ?? 2)}>
             <option value="1">Haute</option><option value="2">Normale</option><option value="3">Basse</option>
@@ -111,7 +111,7 @@ function ContributionForm({ goal, direction, accounts, onDone }: { goal: G; dire
       }}
     >
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Montant (€)" htmlFor="camount"><Input id="camount" name="amount" inputMode="decimal" required autoFocus /></Field>
+        <Field label="Montant" htmlFor="camount"><Input id="camount" name="amount" inputMode="decimal" required autoFocus /></Field>
         <Field label="Date" htmlFor="cdate"><Input id="cdate" name="date" type="date" defaultValue={today} required /></Field>
       </div>
       <Field label="Note" htmlFor="cnote"><Input id="cnote" name="note" maxLength={200} /></Field>

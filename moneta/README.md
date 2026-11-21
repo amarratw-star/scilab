@@ -1,5 +1,10 @@
 # MONETA — centre de contrôle financier personnel
 
+> **V2** : tableau de bord hiérarchisé (4 indicateurs essentiels + indicateurs secondaires), « Combien puis-je
+> dépenser ? » détaillé, **Santé financière** (note /100 documentée), **opportunités d'économies**, calendrier de
+> **trésorerie** (7/30/90/365 jours, jours à risque), simulateur de scénario complet, conseiller IA enrichi,
+> devise d'affichage appliquée partout, audit des calculs : voir [`docs/CALCULS.md`](./docs/CALCULS.md).
+
 Application web (PWA installable) de gestion financière personnelle : comptes, opérations, budgets, épargne,
 abonnements, calendrier, analyses, prévisions, simulateur, patrimoine, documents, rapports et conseiller IA.
 
@@ -176,7 +181,7 @@ Implémentées dans `src/lib/finance/` et couvertes par les tests unitaires.
 ## 7. Tests
 
 ```bash
-npm run test:unit            # 83 tests : moteur de calcul, montants, dates (bissextiles), CSV, OCR
+npm run test:unit            # 100 tests : moteur de calcul, audit V2, santé, opportunités, montants, dates, CSV, OCR
 # Intégration : base dédiée
 bash scripts/setup-local-db.sh moneta_test
 MIGRATION_DATABASE_URL=postgres://moneta_owner:moneta_owner_dev@localhost:5432/moneta_test npm run db:migrate
@@ -184,7 +189,7 @@ npm run test:integration     # 26 tests : RLS, auth, soldes, transferts, import,
 # Bout en bout : base dédiée + build de production
 bash scripts/setup-local-db.sh moneta_e2e
 MIGRATION_DATABASE_URL=postgres://moneta_owner:moneta_owner_dev@localhost:5432/moneta_e2e npm run db:migrate
-npm run build && npm run test:e2e   # 16 parcours (bureau + mobile)
+npm run build && npm run test:e2e   # 18 tests : parcours, V2 (20 pages × clair/sombre, console), mobile Pixel 7 + iPhone SE
 ```
 
 ## 8. Déploiement
@@ -243,6 +248,6 @@ des statistiques calculées par le moteur ; il peut seulement **proposer** une o
 ## 11. Limites connues
 
 Voir le rapport de livraison. Principales : connecteur Powens non testé faute d'identifiants ; une seule devise
-par utilisateur (pas de conversion) ; interface uniquement en français ; documents limités à 8 Mo et stockés en base ;
+d'affichage par utilisateur, appliquée partout mais **sans conversion** (aucune source de taux de change configurée) ; interface uniquement en français ; documents limités à 8 Mo et stockés en base ;
 l'OCR local est moins précis sur les tickets froissés ; l'historique des conversations IA n'est pas conservé (choix de
 confidentialité).
