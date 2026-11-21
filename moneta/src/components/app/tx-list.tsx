@@ -30,6 +30,8 @@ export type TxView = {
   recurringId: string | null;
   refundOfId: string | null;
   docCount?: number;
+  /** Opération issue de la synchronisation bancaire */
+  bank?: { pending: boolean; unverified: boolean } | null;
 };
 
 export function signedAmount(t: Pick<TxView, "kind" | "amount">, perspectiveAccountId?: string, toAccountId?: string | null) {
@@ -106,7 +108,8 @@ function TxRow({ t, accountNames, perspectiveAccountId, showDate }: { t: TxView;
           <span className={cn("tabular text-sm font-semibold", t.kind === "transfer" || t.kind === "adjustment" ? "text-foreground" : amount > 0 ? "text-positive" : "")}>
             {formatMoney(amount, undefined, { signed: true })}
           </span>
-          {t.status === "planned" && <Badge tone="info">Prévue</Badge>}
+          {t.bank?.unverified && t.status !== "cancelled" && <Badge tone="solid">Nouvelle</Badge>}
+          {t.status === "planned" && <Badge tone="info">{t.bank?.pending ? "En attente" : "Prévue"}</Badge>}
           {t.status === "cancelled" && <Badge>Annulée</Badge>}
           {t.kind === "refund" && <Badge tone="positive">Remboursement</Badge>}
         </span>

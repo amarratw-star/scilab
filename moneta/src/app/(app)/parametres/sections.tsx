@@ -15,6 +15,7 @@ import { IconBadge, ICONS } from "@/components/ui/icon";
 import { ConfirmDialog } from "@/components/ui/confirm";
 import { changePasswordAction, deleteMyAccountAction, loadDemoDataAction, revokeSessionAction, saveProfileAction, savePreferencesAction, savePushSubscriptionAction, wipeDataAction } from "@/app/actions/account";
 import { deleteCategoryAction, reorderCategoriesAction, saveCategoryAction } from "@/app/actions/finance";
+import { deleteRuleAction, saveBankPrefsAction } from "@/app/actions/bank";
 import { centsToInput } from "@/lib/money";
 import type { UserSettings } from "@/server/db/schema";
 
@@ -27,10 +28,11 @@ type Props = {
   categories: Cat[];
   features: { ai: boolean; push: boolean; email: boolean; bank: boolean };
   vapidKey: string | null;
+  bank: { rules: { id: string; pattern: string; category: string }[]; runs: { id: string; at: string; trigger: string; status: string; created: number; updated: number; merged: number; message: string | null }[] };
 };
 
 const TIMEZONES = ["Europe/Paris", "Europe/Brussels", "Europe/Zurich", "Europe/Luxembourg", "Europe/Monaco", "Europe/London", "Europe/Madrid", "Europe/Berlin", "America/Montreal", "America/Guadeloupe", "America/Martinique", "Indian/Reunion", "Indian/Mayotte", "America/Cayenne", "Pacific/Noumea", "Pacific/Tahiti", "Africa/Casablanca", "Africa/Dakar", "Africa/Abidjan", "UTC"];
-const SECTIONS = [["profil", "Profil"], ["apparence", "Apparence"], ["tableau-de-bord", "Tableau de bord"], ["notifications", "Notifications"], ["categories", "Catégories"], ["confidentialite", "Confidentialité et IA"], ["securite", "Sécurité"], ["donnees", "Mes données"], ["integrations", "Intégrations"]];
+const SECTIONS = [["profil", "Profil"], ["apparence", "Apparence"], ["tableau-de-bord", "Tableau de bord"], ["notifications", "Notifications"], ["categories", "Catégories"], ["confidentialite", "Confidentialité et IA"], ["banque", "Synchronisation bancaire"], ["securite", "Sécurité"], ["donnees", "Mes données"], ["integrations", "Intégrations"]];
 const DASH = [["actions", "Actions rapides"], ["kpis", "Indicateurs clés"], ["chart", "Graphique principal"], ["available", "Combien puis-je dépenser"], ["summary", "Ton mois en bref"], ["health", "Santé financière"], ["alerts", "Alertes"], ["opportunities", "Opportunités d'économies"], ["categories", "Répartition par catégorie"], ["budgets", "Budgets"], ["recent", "Dernières opérations"], ["upcoming", "Prochains prélèvements"]];
 
 function useDone() {
@@ -56,6 +58,7 @@ export function SettingsSections(p: Props) {
         <Notifications {...p} />
         <Categories categories={p.categories} />
         <Privacy settings={p.user.settings} ai={p.features.ai} />
+        <BankSync settings={p.user.settings} bank={p.bank} ai={p.features.ai} />
         <Security sessions={p.sessions} isDemo={p.user.isDemo} timezone={p.user.timezone} />
         <Data {...p} />
         <Integrations features={p.features} />
@@ -387,6 +390,68 @@ function Integrations({ features }: { features: Props["features"] }) {
           </li>
         ))}
       </ul>
+    </Section>
+  );
+}
+
+const BANK_PREFS: { key: "autoSync" | "notifyImport" | "notifyErrors" | "autoCategorize" | "confirmUncertain" | "aiCategorize"; label: string; hint: string; def: boolean; needsAi?: boolean }[] = [
+  { key: "autoSync", label: "Synchronisation automatique", hint: "Actualisation de secours chaque jour si aucune mise à jour n'est arrivée de la banque.", def: true },
+  { key: "notifyImport", label: "Me prévenir des nouvelles opérations", hint: "Notification après chaque import.", def: true },
+  { key: "notifyErrors", label: "Me prévenir en cas de problème de connexion", hint: "Autorisation expirée, banque indisponible…", def: true },
+  { key: "autoCategorize", label: "Catégorisation automatique", hint: "Règles, habitudes, catégorie bancaire et moteur local.", def: true },
+  { key: "confirmUncertain", label: "Me demander de valider les catégories incertaines", hint: "Les opérations à faible confiance sont signalées dans « À vérifier ».", def: true },
+];
+const TRIGGER_LABEL: Record<string, string> = { webhook: "Automatique (banque)", manual: "Actualisation manuelle", callback: "Après connexion", scheduled: "Synchronisation de secours" };
+
+function BankSync({ settings, bank, ai }: { settings: UserSettings; bank: Props["bank"]; ai: boolean }) {
+  const done = useDone();
+  const [state, setState] = useState(() => Object.fromEntries(BANK_PREFS.map((b) => [b.key, settings.bank?.[b.key] ?? b.def])) as Record<string, boolean>);
+  const fmt = (iso: string) => new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(new Date(iso));
+  return (
+    <Section id="banque" title="Synchronisation bancaire" description={<>Préférences, règles mémorisées et historique. <Link href="/comptes#connexions" className="text-info hover:underline">Gérer mes connexions</Link> · <Link href="/confidentialite-bancaire" className="text-info hover:underline">Confidentialité bancaire</Link></>}>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {BANK_PREFS.filter((b) => !b.needsAi || ai).map((b) => (
+          <label key={b.key} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 text-sm">
+            <span><span className="block">{b.label}</span><span className="block text-xs text-subtle">{b.hint}</span></span>
+            <Switch checked={state[b.key]} onCheckedChange={async (v) => { setState({ ...state, [b.key]: v }); done(await saveBankPrefsAction({ [b.key]: v })); }} />
+          </label>
+        ))}
+      </div>
+      <h3 className="mt-6 text-sm font-medium">Règles de catégorisation</h3>
+      {bank.rules.length === 0 ? (
+        <p className="mt-1 text-xs text-subtle">Aucune règle. MONETA t&apos;en proposera quand tu corriges plusieurs fois la même catégorie.</p>
+      ) : (
+        <ul className="mt-2 divide-y divide-border rounded-xl border border-border">
+          {bank.rules.map((r) => (
+            <li key={r.id} className="flex items-center gap-2 px-3 py-2 text-sm">
+              <span className="min-w-0 flex-1 truncate">« {r.pattern} » → <strong>{r.category}</strong></span>
+              <Button size="icon-sm" variant="ghost" aria-label={`Supprimer la règle ${r.pattern}`} onClick={async () => done(await deleteRuleAction(r.id))}><Trash2 /></Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <h3 className="mt-6 text-sm font-medium">Historique des synchronisations</h3>
+      {bank.runs.length === 0 ? (
+        <p className="mt-1 text-xs text-subtle">Aucune synchronisation pour l&apos;instant.</p>
+      ) : (
+        <div className="mt-2 overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-surface-2 text-subtle"><tr><th className="px-3 py-2 font-medium">Date</th><th className="px-3 py-2 font-medium">Origine</th><th className="px-3 py-2 font-medium">Résultat</th><th className="px-3 py-2 text-right font-medium">Nouvelles</th><th className="px-3 py-2 text-right font-medium">Mises à jour</th><th className="px-3 py-2 text-right font-medium">Fusionnées</th></tr></thead>
+            <tbody className="divide-y divide-border">
+              {bank.runs.map((r) => (
+                <tr key={r.id}>
+                  <td className="whitespace-nowrap px-3 py-2">{fmt(r.at)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{TRIGGER_LABEL[r.trigger] ?? r.trigger}</td>
+                  <td className="px-3 py-2"><Badge tone={r.status === "success" ? "positive" : r.status === "partial" ? "warning" : "negative"}>{r.status === "success" ? "Réussie" : r.status === "partial" ? "Partielle" : "Échec"}</Badge>{r.message ? <span className="ml-1 text-subtle">{r.message}</span> : null}</td>
+                  <td className="px-3 py-2 text-right tabular">{r.created}</td>
+                  <td className="px-3 py-2 text-right tabular">{r.updated}</td>
+                  <td className="px-3 py-2 text-right tabular">{r.merged}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Section>
   );
 }

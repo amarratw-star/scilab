@@ -1,4 +1,8 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { Landmark } from "lucide-react";
+import * as s from "@/server/db/schema";
 import { requireUser } from "@/server/auth/session";
 import { runAsUser } from "@/server/services/context";
 import { loadFinance } from "@/server/services/snapshot";
@@ -20,7 +24,11 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const user = await requireUser();
-  const { fin, today } = await runAsUser(user, async (ctx) => ({ fin: await loadFinance(ctx), today: ctx.today }));
+  const { fin, today, link } = await runAsUser(user, async (ctx) => ({
+    fin: await loadFinance(ctx),
+    today: ctx.today,
+    link: (await ctx.tx.select().from(s.bankAccountLinks).leftJoin(s.bankConnections, eq(s.bankConnections.id, s.bankAccountLinks.connectionId)).where(eq(s.bankAccountLinks.accountId, id)))[0] ?? null,
+  }));
   const acc = fin.accountRows.find((a) => a.id === id);
   if (!acc) notFound();
   const balance = fin.balances.get(id) ?? acc.initialBalance;
@@ -50,6 +58,21 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
           />
         }
       />
+      {link && (
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3 text-sm">
+          <span className="flex items-center gap-2 font-medium"><Landmark className="size-4" /> Synchronisé avec {link.bank_connections?.connectorName ?? "ta banque"}</span>
+          {link.bank_account_links.ibanMasked && <span className="text-xs text-subtle">{link.bank_account_links.ibanMasked}</span>}
+          {!link.bank_account_links.syncEnabled && <Badge tone="warning">Synchronisation suspendue</Badge>}
+          <span className="ml-auto text-xs text-muted">
+            {link.bank_account_links.bankBalance !== null ? <>Solde communiqué par la banque : <strong className="tabular">{formatMoney(link.bank_account_links.bankBalance)}</strong>{link.bank_account_links.balanceAt ? ` (${formatDateFR(link.bank_account_links.balanceAt.toISOString().slice(0, 10))})` : ""}</> : "Solde non communiqué par la banque"}
+          </span>
+          {link.bank_account_links.bankBalance !== null && Math.abs(link.bank_account_links.bankBalance - balance) >= 1 && (
+            <p className="basis-full text-xs text-warning">
+              Écart de {formatMoney(balance - link.bank_account_links.bankBalance, undefined, { signed: true })} avec le solde calculé (opérations antérieures non importées, opérations manuelles en double ou en attente…). Vérifie les <Link href="/transactions/a-verifier" className="underline">doublons possibles</Link> ou utilise « Rapprocher ».
+            </p>
+          )}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Solde actuel" value={<Money cents={balance} tone={balance < 0 ? "negative" : "none"} />} hint="Solde initial + opérations effectuées" />
         <Stat label="Solde initial" value={<Money cents={acc.initialBalance} />} hint={`au ${formatDateFR(acc.openedOn)}`} />

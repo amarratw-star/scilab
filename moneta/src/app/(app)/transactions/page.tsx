@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Download, Upload } from "lucide-react";
+import { Download, Inbox, Upload } from "lucide-react";
+import { reviewCounts } from "@/server/bank/service";
 import { requireUser } from "@/server/auth/session";
 import { runAsUser } from "@/server/services/context";
 import { getTransaction, listTransactions, listTags } from "@/server/services/transactions";
@@ -26,7 +27,8 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
     const list = single ? { rows: [{ ...single, docCount: 0 }], total: 1, income: 0, expenses: 0 } : await listTransactions(ctx, f);
     const accounts = await ctx.tx.select({ id: s.accounts.id, name: s.accounts.name, archivedAt: s.accounts.archivedAt }).from(s.accounts);
     const tags = await listTags(ctx);
-    return { f, list, accounts, tags, single: Boolean(single) };
+    const review = await reviewCounts(ctx);
+    return { f, list, accounts, tags, single: Boolean(single), review };
   });
   const { f, list, accounts, tags } = data;
   const names = Object.fromEntries(accounts.map((a) => [a.id, a.name]));
@@ -44,6 +46,9 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
         description="Toutes tes dépenses, revenus, transferts et remboursements."
         actions={
           <>
+            {(data.review.unverified > 0 || data.review.duplicates > 0) && (
+              <Button asChild variant="outline"><Link href="/transactions/a-verifier"><Inbox /> À vérifier <span className="rounded-full bg-primary px-1.5 text-[11px] text-primary-foreground">{data.review.unverified + data.review.duplicates}</span></Link></Button>
+            )}
             <Button asChild variant="outline"><a href={`/api/export/transactions?${exportQs}`}><Download /> Exporter</a></Button>
             <Button asChild variant="outline"><Link href="/import"><Upload /> Importer</Link></Button>
             <AddButton />

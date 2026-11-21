@@ -25,6 +25,7 @@ export function toTxView(t: TxRow & { docCount?: number }): TxView {
     recurringId: t.recurringId,
     refundOfId: t.refundOfId,
     docCount: t.docCount,
+    bank: t.externalId ? { pending: t.bankStatus === "coming", unverified: !t.verifiedAt } : null,
   };
 }
 

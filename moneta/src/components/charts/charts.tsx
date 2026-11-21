@@ -179,7 +179,7 @@ export function CategoryDonut({ data, total, height = 200 }: { data: { name: str
   const rest = data.filter((d) => d.amount > 0).slice(7).reduce((s, d) => s + d.amount, 0);
   const rows = rest > 0 ? [...top, { name: "Autres catégories", amount: rest, color: "#94a3b8", share: total ? rest / total : null }] : top;
   return (
-    <div className="grid grid-cols-1 items-center gap-5 sm:grid-cols-[180px_1fr]">
+    <div className="@container"><div className="grid grid-cols-1 items-center gap-5 @md:grid-cols-[180px_minmax(0,1fr)]">
       <ChartFrame height={height} label="Répartition des dépenses par catégorie">
         <div className="relative h-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -204,10 +204,10 @@ export function CategoryDonut({ data, total, height = 200 }: { data: { name: str
             <span className="size-2.5 shrink-0 rounded-full" style={{ background: r.color }} />
             <span className="min-w-0 flex-1 truncate">{r.name}</span>
             <span className="tabular text-muted">{formatPct(r.share, 0)}</span>
-            <span className="tabular w-24 text-right font-medium">{formatMoney(r.amount)}</span>
+            <span className="tabular shrink-0 text-right font-medium">{formatMoney(r.amount)}</span>
           </li>
         ))}
-      </ul>
+      </ul></div>
     </div>
   );
 }

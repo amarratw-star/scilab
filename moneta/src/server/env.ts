@@ -24,6 +24,7 @@ const schema = z.object({
   POWENS_DOMAIN: z.string().optional(),
   POWENS_CLIENT_ID: z.string().optional(),
   POWENS_CLIENT_SECRET: z.string().optional(),
+  POWENS_WEBHOOK_SECRET: z.string().optional(),
   ALLOW_DEMO_ACCOUNTS: z.enum(["true", "false"]).default("true"),
   NODE_ENV: z.string().default("development"),
 });

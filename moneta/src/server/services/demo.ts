@@ -3,6 +3,7 @@
  * partout par un bandeau, et peuvent être supprimées en un clic pour démarrer avec un espace vierge.
  */
 import "server-only";
+import { revokeBankAccess } from "@/server/bank/service";
 import { eq, sql } from "drizzle-orm";
 import * as s from "@/server/db/schema";
 import { audit, ServiceError, type Ctx } from "./context";
@@ -191,6 +192,10 @@ export async function seedDemoData(ctx: Ctx) {
 /** Supprime TOUTES les données financières de l'utilisateur (démo ou non) et repart d'un espace vide. */
 export async function wipeFinancialData(ctx: Ctx, keepCategories = true) {
   const t = ctx.tx;
+  await revokeBankAccess(ctx); // en premier : en cas d'échec chez l'agrégateur, rien n'est supprimé
+  await t.delete(s.txReconciliations);
+  await t.delete(s.syncRuns);
+  await t.delete(s.merchantRules);
   await t.delete(s.documents);
   await t.delete(s.goalContributions);
   await t.delete(s.transactions);

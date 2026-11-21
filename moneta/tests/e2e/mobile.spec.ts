@@ -6,11 +6,12 @@ test("mobile : navigation inférieure, ajout rapide et absence de défilement ho
   await page.waitForURL((u) => u.pathname === "/", { timeout: 60_000 });
   const nav = page.getByRole("navigation", { name: "Navigation mobile" });
   await expect(nav).toBeVisible();
-  for (const path of ["/", "/transactions", "/comptes", "/budgets", "/epargne", "/abonnements", "/calendrier", "/disponible", "/analyses", "/sante", "/conseiller", "/simulateur", "/previsions", "/patrimoine", "/documents", "/rapports", "/import", "/scanner", "/notifications", "/parametres"]) {
+  for (const path of ["/", "/transactions", "/comptes", "/budgets", "/epargne", "/abonnements", "/calendrier", "/disponible", "/analyses", "/sante", "/conseiller", "/simulateur", "/previsions", "/patrimoine", "/documents", "/rapports", "/import", "/scanner", "/notifications", "/parametres", "/connecter-banque", "/transactions/a-verifier", "/confidentialite-bancaire"]) {
     await page.goto(path);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `défilement horizontal sur ${path}`).toBeLessThanOrEqual(1);
   }
+  await page.goto("/");
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Ajout rapide" }).click();
   await expect(page.getByRole("dialog", { name: "Nouvelle opération" })).toBeVisible();

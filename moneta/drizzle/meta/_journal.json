@@ -15,6 +15,27 @@
       "when": 1795196579251,
       "tag": "0001_rls_and_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795256690032,
+      "tag": "0002_bank_sync",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795256690723,
+      "tag": "0003_bank_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795257663519,
+      "tag": "0004_bank_cron",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, Bot, CalendarClock, CheckCircle2, HeartPulse, PiggyBank, Plus, Sparkles } from "lucide-react";
 import { requireUser } from "@/server/auth/session";
 import { runAsUser } from "@/server/services/context";
+import { reviewCounts } from "@/server/bank/service";
+import { BankBanner } from "@/components/dashboard/bank-banner";
 import { loadFinance } from "@/server/services/snapshot";
 import { loadWealthItems } from "@/server/services/wealth-data";
 import { computeAlerts, computeOverview } from "@/server/services/overview";
@@ -37,10 +39,10 @@ export const metadata: Metadata = { title: "Tableau de bord" };
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
   const sp = await searchParams;
-  const { fin, wealth, today, settings } = await runAsUser(user, async (ctx) => {
+  const { fin, wealth, today, settings, review } = await runAsUser(user, async (ctx) => {
     const fin = await loadFinance(ctx);
     await generateNotifications(ctx, fin).catch(() => 0);
-    return { fin, wealth: await loadWealthItems(ctx), today: ctx.today, settings: ctx.settings };
+    return { fin, wealth: await loadWealthItems(ctx), today: ctx.today, settings: ctx.settings, review: await reviewCounts(ctx) };
   });
   const hidden = new Set(settings.dashboard?.hidden ?? []);
   const ov = computeOverview(fin, today, settings);
@@ -111,6 +113,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           }
         />
       )}
+
+      <BankBanner review={review} />
 
       {/* Niveau 1 : les quatre indicateurs essentiels */}
       {!hidden.has("kpis") && hasAccounts && (

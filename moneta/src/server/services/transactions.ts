@@ -89,6 +89,8 @@ export async function updateTransaction(ctx: Ctx, id: string, input: Transaction
       isRecurring: input.isRecurring,
       notes: input.notes,
       refundOfId: input.kind === "refund" ? input.refundOfId : null,
+      // Opération bancaire : une catégorie modifiée devient un choix de l'utilisateur (apprentissage, jamais écrasée)
+      ...(existing.importedAt && input.categoryId !== existing.categoryId ? { categorySource: "user", categoryConfidence: 100, verifiedAt: new Date() } : {}),
       updatedAt: new Date(),
     })
     .where(eq(s.transactions.id, id))
@@ -101,6 +103,13 @@ export async function updateTransaction(ctx: Ctx, id: string, input: Transaction
 }
 
 export async function deleteTransaction(ctx: Ctx, id: string) {
+  const [bankRow] = await ctx.tx.select({ externalId: s.transactions.externalId, notes: s.transactions.notes }).from(s.transactions).where(eq(s.transactions.id, id));
+  if (bankRow?.externalId) {
+    // Opération synchronisée : masquée (annulée) plutôt qu'effacée, sinon elle serait réimportée à la synchronisation suivante
+    const [row] = await ctx.tx.update(s.transactions).set({ status: "cancelled", notes: `Masquée par l'utilisateur. ${bankRow.notes ?? ""}`.trim(), updatedAt: new Date() }).where(eq(s.transactions.id, id)).returning();
+    await audit(ctx, "transaction.hide_bank", "transaction", id, { kind: row.kind, amount: row.amount, date: row.date });
+    return row;
+  }
   const [existing] = await ctx.tx.delete(s.transactions).where(eq(s.transactions.id, id)).returning();
   if (!existing) throw new ServiceError("Opération introuvable");
   await audit(ctx, "transaction.delete", "transaction", id, { kind: existing.kind, amount: existing.amount, date: existing.date });

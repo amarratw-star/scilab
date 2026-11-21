@@ -2,23 +2,37 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { FlaskConical, Upload, Wallet } from "lucide-react";
+import { FlaskConical, Landmark, Upload, Wallet } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AccountForm } from "@/components/forms/account-form";
 import { completeOnboardingAction, loadDemoDataAction } from "@/app/actions/account";
 
-export function Onboarding({ today, demoEnabled }: { today: string; demoEnabled: boolean }) {
+export function Onboarding({ today, demoEnabled, bankEnabled }: { today: string; demoEnabled: boolean; bankEnabled: boolean }) {
   const router = useRouter();
   const [mode, setMode] = useState<"account" | null>(null);
   const [pending, start] = useTransition();
-  const finish = (to: string) =>
+  const finish = (to: string, hard = false) =>
     start(async () => {
       await completeOnboardingAction();
-      router.push(to);
+      // Parcours de connexion bancaire : chargement complet de la page (évite un blocage intermittent du routeur client)
+      if (hard) window.location.assign(to);
+      else router.push(to);
     });
   return (
     <div className="mt-8 space-y-4">
+      {bankEnabled && (
+        <Card className="p-5">
+          <div className="flex items-start gap-4">
+            <span className="rounded-2xl bg-primary/10 p-3"><Landmark className="size-5" /></span>
+            <div className="flex-1">
+              <p className="font-medium">Connecter ma banque</p>
+              <p className="text-sm text-muted">Tes comptes et opérations arrivent automatiquement. Tu t&apos;authentifies chez ta banque : MONETA ne voit jamais tes identifiants. Lecture seule.</p>
+              <Button className="mt-3" loading={pending} onClick={() => finish("/connecter-banque", true)}>Connecter ma banque</Button>
+            </div>
+          </div>
+        </Card>
+      )}
       <Card className="p-5">
         <div className="flex items-start gap-4">
           <span className="rounded-2xl bg-info-soft p-3 text-info"><Wallet className="size-5" /></span>

@@ -7,6 +7,7 @@ import { randomToken, sha256Hex } from "@/server/crypto";
 import { runAsUser, audit, ServiceError, type Ctx } from "./context";
 import { ensureDefaultCategories } from "./categories";
 import { sendMail } from "@/server/mail";
+import { revokeBankAccess } from "@/server/bank/service";
 
 export async function findUserByEmail(email: string) {
   const [u] = await getDb().select().from(s.users).where(sql`lower(${s.users.email}) = ${email.toLowerCase()}`);
@@ -113,6 +114,7 @@ export async function deleteUserAccount(userId: string, password: string | null)
   const [user] = await getDb().select().from(s.users).where(eq(s.users.id, userId));
   if (!user) return;
   if (!user.isDemo && !(password && (await verifyPassword(user.passwordHash, password)))) throw new ServiceError("Mot de passe incorrect", { password: "Mot de passe incorrect" });
+  await runAsUser(user, (ctx) => revokeBankAccess(ctx)); // supprime aussi l'utilisateur chez l'agrégateur bancaire
   await getDb().delete(s.users).where(eq(s.users.id, userId));
 }
 
@@ -126,6 +128,13 @@ export async function exportAllData(ctx: Ctx) {
   const t = ctx.tx;
   const [user] = await t.select().from(s.users).where(eq(s.users.id, ctx.userId));
   const { passwordHash: _p, ...profile } = user;
+  const [bankConnections, bankAccountLinks, merchantRules, reconciliations, syncRuns] = await Promise.all([
+    t.select({ id: s.bankConnections.id, provider: s.bankConnections.provider, connectorName: s.bankConnections.connectorName, status: s.bankConnections.status, state: s.bankConnections.state, lastSyncAt: s.bankConnections.lastSyncAt, createdAt: s.bankConnections.createdAt }).from(s.bankConnections),
+    t.select({ accountId: s.bankAccountLinks.accountId, connectionId: s.bankAccountLinks.connectionId, externalName: s.bankAccountLinks.externalName, ibanMasked: s.bankAccountLinks.ibanMasked, bankBalance: s.bankAccountLinks.bankBalance, balanceAt: s.bankAccountLinks.balanceAt, syncEnabled: s.bankAccountLinks.syncEnabled }).from(s.bankAccountLinks),
+    t.select().from(s.merchantRules),
+    t.select().from(s.txReconciliations),
+    t.select().from(s.syncRuns),
+  ]);
   const [accounts, categories, transactions, recurring, budgets, goals, contributions, wealthItems, wealthValuations, notifications, auditLog, documents] = await Promise.all([
     t.select().from(s.accounts),
     t.select().from(s.categories),
@@ -159,5 +168,6 @@ export async function exportAllData(ctx: Ctx) {
     notifications,
     auditLog,
     documents: documents.map((d) => ({ ...d, data: Buffer.from(d.data).toString("base64") })),
+    bank: { notice: "Aucun jeton ni identifiant bancaire n'est exporté.", connections: bankConnections, accountLinks: bankAccountLinks, merchantRules, reconciliations, syncRuns },
   };
 }

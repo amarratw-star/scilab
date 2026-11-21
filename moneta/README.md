@@ -4,6 +4,12 @@
 > dépenser ? » détaillé, **Santé financière** (note /100 documentée), **opportunités d'économies**, calendrier de
 > **trésorerie** (7/30/90/365 jours, jours à risque), simulateur de scénario complet, conseiller IA enrichi,
 > devise d'affichage appliquée partout, audit des calculs : voir [`docs/CALCULS.md`](./docs/CALCULS.md).
+>
+> **V3** : **synchronisation bancaire automatique** via Powens (DSP2, lecture seule) — connexions multiples, états
+> (autorisation expirée, action nécessaire…), webhooks signés + synchronisation de secours, opérations en attente /
+> comptabilisées / supprimées, **détection des doublons** avec les saisies manuelles (fusion traçable et réversible),
+> virements internes, catégorisation apprenante, page « Opérations à vérifier », page publique *Confidentialité
+> bancaire* : voir [`docs/BANQUE.md`](./docs/BANQUE.md). **Non testé contre l'API Powens réelle** (pas d'identifiants).
 
 Application web (PWA installable) de gestion financière personnelle : comptes, opérations, budgets, épargne,
 abonnements, calendrier, analyses, prévisions, simulateur, patrimoine, documents, rapports et conseiller IA.
@@ -82,7 +88,8 @@ Toutes les variables sont décrites dans [`.env.example`](./.env.example). **Auc
 | `SMTP_*` | recommandé en prod | en dev, le lien de réinitialisation est écrit dans la console serveur ; en prod il n'est pas envoyé |
 | `VAPID_*` | non | notifications uniquement dans l'application (pas de push) |
 | `CRON_SECRET` | recommandé | la tâche quotidienne `/api/cron/daily` refuse toute requête |
-| `POWENS_*` | non | la connexion bancaire est affichée comme non configurée |
+| `POWENS_DOMAIN`, `POWENS_CLIENT_ID`, `POWENS_CLIENT_SECRET` | non | la connexion bancaire est affichée comme non configurée (l'import CSV reste disponible) |
+| `POWENS_WEBHOOK_SECRET` | recommandé si Powens | sans clé HMAC, les webhooks sont authentifiés par le jeton utilisateur seulement |
 
 ## 4. Architecture
 
@@ -113,7 +120,7 @@ moneta/
 │   │   ├── auth/                Argon2id, sessions (cookie httpOnly, jeton haché), limitation de débit
 │   │   ├── services/            logique métier (comptes, opérations, budgets, objectifs, import, rapports…)
 │   │   ├── ai/                  conseiller IA (outils en lecture seule) + vision ticket
-│   │   └── bank/powens.ts       connecteur DSP2
+│   │   └── bank/                client Powens (lecture seule), ingestion, service, webhooks — voir docs/BANQUE.md
 │   ├── app/                     Next.js App Router
 │   │   ├── (auth)/              connexion, inscription, mot de passe
 │   │   ├── (app)/               19 pages privées
@@ -181,16 +188,20 @@ Implémentées dans `src/lib/finance/` et couvertes par les tests unitaires.
 ## 7. Tests
 
 ```bash
-npm run test:unit            # 100 tests : moteur de calcul, audit V2, santé, opportunités, montants, dates, CSV, OCR
+npm run test:unit            # 129 tests : moteur de calcul, audit V2, banque V3, santé, opportunités, montants, dates, CSV, OCR
 # Intégration : base dédiée
 bash scripts/setup-local-db.sh moneta_test
 MIGRATION_DATABASE_URL=postgres://moneta_owner:moneta_owner_dev@localhost:5432/moneta_test npm run db:migrate
-npm run test:integration     # 26 tests : RLS, auth, soldes, transferts, import, récurrences, démo, RGPD, outils IA
+npm run test:integration     # 63 tests : RLS, auth, soldes, transferts, import, récurrences, démo, RGPD, outils IA, synchro bancaire
 # Bout en bout : base dédiée + build de production
 bash scripts/setup-local-db.sh moneta_e2e
 MIGRATION_DATABASE_URL=postgres://moneta_owner:moneta_owner_dev@localhost:5432/moneta_e2e npm run db:migrate
-npm run build && npm run test:e2e   # 18 tests : parcours, V2 (20 pages × clair/sombre, console), mobile Pixel 7 + iPhone SE
+npm run build && npm run test:e2e   # parcours, V2 (20 pages × clair/sombre, console), V3 banque (Powens simulé), mobile Pixel 7 + iPhone SE
 ```
+
+Synchronisation bancaire : `tests/unit/bank.test.ts` (29 tests) et `tests/integration/bank.test.ts` (37 tests, réponses
+Powens simulées). Les tests e2e démarrent `tests/e2e/powens-mock.mjs`, un serveur Powens **fictif** local, et interceptent
+la webview réelle : aucune banque réelle n'est contactée.
 
 ## 8. Déploiement
 
@@ -239,7 +250,7 @@ Supabase propose aussi des sauvegardes quotidiennes automatiques (offres payante
 | Conseiller IA + vision ticket (Anthropic, modèle `claude-opus-5-5`) | développé, testé sans clé | `ANTHROPIC_API_KEY` |
 | E-mail (nodemailer / SMTP) | développé | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` |
 | Notifications push Web | développé | `npx web-push generate-vapid-keys` → `VAPID_*` |
-| Connexion bancaire DSP2 (Powens) | connecteur développé, **non testé contre l'API réelle** | contrat Powens + `POWENS_DOMAIN`, `POWENS_CLIENT_ID`, `POWENS_CLIENT_SECRET`, URL de retour `APP_URL/api/bank/callback` déclarée chez Powens |
+| Connexion bancaire DSP2 (Powens) | V3 développée et testée contre un serveur simulé, **non testée contre l'API réelle** | contrat Powens + `POWENS_DOMAIN`, `POWENS_CLIENT_ID`, `POWENS_CLIENT_SECRET`, `POWENS_WEBHOOK_SECRET`, URL de retour `APP_URL/api/bank/callback` et webhooks `APP_URL/api/webhooks/powens?event=…` déclarés chez Powens ([`docs/BANQUE.md`](./docs/BANQUE.md)) |
 | OCR local (tesseract.js) | développé | rien (modèle français téléchargé depuis jsDelivr par le navigateur) |
 
 Le conseiller IA n'accède jamais directement à la base : il appelle des outils en lecture seule qui renvoient

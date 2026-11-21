@@ -100,6 +100,8 @@ export type UserSettings = {
   dashboard?: { hidden?: string[] };
   notifications?: Partial<Record<NotificationType, boolean>>;
   privacy?: { aiEnabled?: boolean; ocrCloudEnabled?: boolean };
+  /** Préférences de synchronisation bancaire (V3). Toutes activées par défaut sauf mention contraire. */
+  bank?: { autoSync?: boolean; notifyImport?: boolean; notifyErrors?: boolean; autoCategorize?: boolean; confirmUncertain?: boolean; aiCategorize?: boolean };
 };
 
 export type NotificationType =
@@ -292,6 +294,17 @@ export const transactions = pgTable(
     source: txSourceEnum("source").notNull().default("manual"),
     importHash: text("import_hash"),
     notes: text("notes"),
+    /** Identifiant de l'opération chez l'agrégateur (clé d'idempotence). */
+    externalId: text("external_id"),
+    /** coming | booked | deleted (état côté banque). */
+    bankStatus: text("bank_status"),
+    bankLabel: text("bank_label"),
+    bankCategory: text("bank_category"),
+    valueDate: date("value_date", { mode: "string" }),
+    categorySource: text("category_source"), // bank | rule | history | local | ai | user
+    categoryConfidence: smallint("category_confidence"),
+    importedAt: timestamp("imported_at", { withTimezone: true }),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -302,6 +315,7 @@ export const transactions = pgTable(
     index("tx_category_idx").on(t.categoryId),
     index("tx_recurring_idx").on(t.recurringId, t.occurrenceDate),
     index("tx_import_hash_idx").on(t.userId, t.importHash),
+    uniqueIndex("tx_external_unique").on(t.userId, t.externalId),
   ],
 );
 
@@ -417,17 +431,46 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   createdAt: createdAt(),
 });
 
-export const bankConnections = pgTable("bank_connections", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: owner(),
-  provider: text("provider").notNull(), // "powens"
-  externalUserId: text("external_user_id"),
-  accessTokenEnc: text("access_token_enc"), // chiffré AES-256-GCM (APP_ENCRYPTION_KEY)
-  status: text("status").notNull().default("pending"), // pending | active | error | revoked
-  lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
-  lastError: text("last_error"),
+/** Utilisateur Powens associé à un utilisateur MONETA (un seul par utilisateur). Jeton chiffré AES-256-GCM. */
+export const bankUsers = pgTable("bank_users", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" })
+    .default(sql`nullif(current_setting('app.user_id', true), '')::uuid`),
+  provider: text("provider").notNull().default("powens"),
+  externalUserId: text("external_user_id").notNull(),
+  accessTokenEnc: text("access_token_enc").notNull(),
   createdAt: createdAt(),
 });
+
+export const bankConnections = pgTable(
+  "bank_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: owner(),
+    provider: text("provider").notNull(), // "powens"
+    externalUserId: text("external_user_id"),
+    /** Obsolète (V2) : le jeton est désormais porté par bank_users. */
+    accessTokenEnc: text("access_token_enc"),
+    status: text("status").notNull().default("pending"), // pending | active | error | revoked
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    createdAt: createdAt(),
+    externalConnectionId: text("external_connection_id"),
+    connectorUuid: text("connector_uuid"),
+    connectorName: text("connector_name"),
+    connectorColor: text("connector_color"),
+    /** ConnectionState Powens (null = OK). */
+    state: text("state"),
+    errorMessage: text("error_message"),
+    nextSyncAt: timestamp("next_sync_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    syncing: boolean("syncing").notNull().default(false),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => [uniqueIndex("bank_connections_external").on(t.userId, t.provider, t.externalConnectionId)],
+);
 
 export const bankAccountLinks = pgTable(
   "bank_account_links",
@@ -440,9 +483,86 @@ export const bankAccountLinks = pgTable(
     accountId: uuid("account_id")
       .notNull()
       .references(() => accounts.id, { onDelete: "cascade" }),
+    /** Synchronisation locale activée par l'utilisateur (indépendante du consentement côté banque). */
+    syncEnabled: boolean("sync_enabled").notNull().default(true),
+    externalName: text("external_name"),
+    externalType: text("external_type"),
+    ibanMasked: text("iban_masked"),
+    currency: text("currency"),
+    /** Dernier solde communiqué par la banque (jamais écrasé par une valeur absente). */
+    bankBalance: cents("bank_balance"),
+    bankComing: cents("bank_coming"),
+    balanceAt: timestamp("balance_at", { withTimezone: true }),
+    disabledAtBank: boolean("disabled_at_bank").notNull().default(false),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.connectionId, t.externalAccountId] })],
 );
+
+/** Règles de catégorisation de l'utilisateur (commerçant normalisé → catégorie). */
+export const merchantRules = pgTable(
+  "merchant_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: owner(),
+    pattern: text("pattern").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("merchant_rules_pattern").on(t.userId, t.pattern)],
+);
+
+/** Traçabilité des rapprochements (doublons manuel/bancaire, en attente/comptabilisée, virements internes). */
+export const txReconciliations = pgTable(
+  "tx_reconciliations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: owner(),
+    kind: text("kind").notNull(), // duplicate | pending_superseded | internal_transfer
+    status: text("status").notNull(), // suggested | merged | kept_both | auto_merged | undone | applied
+    keptTxId: uuid("kept_tx_id"),
+    otherTxId: uuid("other_tx_id"),
+    score: integer("score"),
+    snapshot: jsonb("snapshot").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: createdAt(),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+  },
+  (t) => [index("tx_reco_user_idx").on(t.userId, t.status)],
+);
+
+/** Historique des synchronisations (sans donnée bancaire sensible). */
+export const syncRuns = pgTable(
+  "sync_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: owner(),
+    connectionId: uuid("connection_id").references(() => bankConnections.id, { onDelete: "set null" }),
+    trigger: text("trigger").notNull(), // webhook | manual | callback | scheduled
+    status: text("status").notNull(), // success | partial | error
+    accounts: integer("accounts").notNull().default(0),
+    created: integer("created").notNull().default(0),
+    updated: integer("updated").notNull().default(0),
+    merged: integer("merged").notNull().default(0),
+    message: text("message"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [index("sync_runs_user_idx").on(t.userId, t.startedAt)],
+);
+
+/** Événements webhook reçus (déduplication par id_webhook_data). Hors RLS : écrits avant identification. */
+export const webhookEvents = pgTable("webhook_events", {
+  id: text("id").primaryKey(), // provider:id_webhook_data
+  event: text("event").notNull(),
+  userId: uuid("user_id"),
+  status: text("status").notNull().default("received"), // received | processed | ignored | error
+  attempts: integer("attempts").notNull().default(0),
+  error: text("error"),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+});
 
 export const auditLog = pgTable(
   "audit_log",

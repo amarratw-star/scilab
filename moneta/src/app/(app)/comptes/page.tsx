@@ -5,7 +5,7 @@ import { requireUser } from "@/server/auth/session";
 import { runAsUser } from "@/server/services/context";
 import { loadFinance } from "@/server/services/snapshot";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState, PageHeader, Stat } from "@/components/ui/misc";
+import { Callout, EmptyState, PageHeader, Stat } from "@/components/ui/misc";
 import { Money } from "@/components/ui/money";
 import { IconBadge } from "@/components/ui/icon";
 import { Badge } from "@/components/ui/badge";
@@ -13,13 +13,33 @@ import { CategoryDonut } from "@/components/charts/charts";
 import { ACCOUNT_TYPE_LABELS } from "@/lib/labels";
 import { NewAccountButton } from "./new-account";
 import { formatPct } from "@/lib/money";
+import { bankStatus, connectionViews } from "@/server/bank/service";
+import { BankConnections } from "./connections";
+
+const CALLBACK_MESSAGES: Record<string, { tone: "positive" | "warning" | "negative" | "info"; title: string; body: string }> = {
+  ok: { tone: "positive", title: "Banque connectée", body: "Tes comptes partagés ont été synchronisés." },
+  partiel: { tone: "warning", title: "Connexion établie, synchronisation incomplète", body: "La banque est connectée mais la récupération des opérations a échoué temporairement. Elle reprendra automatiquement ; tu peux aussi actualiser plus tard." },
+  access_denied: { tone: "info", title: "Connexion annulée", body: "Tu as interrompu le parcours ou refusé l'accès. Aucune donnée n'a été récupérée." },
+  cancelled: { tone: "info", title: "Connexion annulée", body: "Aucune donnée n'a été récupérée." },
+  server_error: { tone: "negative", title: "La banque n'a pas pu être jointe", body: "Le service de ta banque ou de l'agrégateur a rencontré un problème. Réessaie dans quelques minutes." },
+  temporarily_unavailable: { tone: "negative", title: "Service momentanément indisponible", body: "Réessaie dans quelques minutes." },
+  etat: { tone: "negative", title: "Retour de connexion non reconnu", body: "Par sécurité, ce retour a été ignoré (lien expiré ou ouvert dans un autre navigateur). Relance la connexion depuis cette page." },
+  indisponible: { tone: "negative", title: "Connexion bancaire indisponible", body: "Elle n'est pas activée pour ce compte." },
+  erreur: { tone: "negative", title: "La connexion n'a pas abouti", body: "Aucune donnée n'a été importée. Tu peux réessayer." },
+};
 
 export const metadata: Metadata = { title: "Comptes" };
 
 export default async function AccountsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
   const sp = await searchParams;
-  const { fin, today } = await runAsUser(user, async (ctx) => ({ fin: await loadFinance(ctx), today: ctx.today }));
+  const bank = bankStatus(user);
+  const { fin, today, connections } = await runAsUser(user, async (ctx) => ({ fin: await loadFinance(ctx), today: ctx.today, connections: await connectionViews(ctx) }));
+  const linked = new Set(connections.flatMap((c) => c.accounts.map((a) => a.accountId)));
+  const manualAccounts = fin.accountRows.filter((a) => !a.archivedAt && !linked.has(a.id)).map((a) => ({ id: a.id, name: a.name }));
+  const cb = sp.banque ? CALLBACK_MESSAGES[sp.banque] ?? CALLBACK_MESSAGES.erreur : null;
+  const created = Number(sp.nouvelles ?? 0);
+  const dups = Number(sp.doublons ?? 0);
   const active = fin.accountRows.filter((a) => !a.archivedAt);
   const archived = fin.accountRows.filter((a) => a.archivedAt);
   const bal = (id: string) => fin.balances.get(id) ?? 0;
@@ -33,6 +53,12 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
   return (
     <div>
       <PageHeader title="Comptes" description="Tous tes comptes et la répartition de ton argent." actions={<NewAccountButton today={today} autoOpen={sp.nouveau === "1"} then={sp.suite === "import" ? "/import" : undefined} />} />
+      {cb && (
+        <Callout tone={cb.tone} className="mb-4" title={cb.title}>
+          {cb.body}
+          {sp.banque === "ok" && created > 0 && <> {created} nouvelle(s) opération(s){dups ? `, dont ${dups} doublon(s) possible(s)` : ""}. <Link href="/transactions/a-verifier" className="font-medium underline">Les vérifier</Link></>}
+        </Callout>
+      )}
       {active.length === 0 ? (
         <EmptyState icon={<Wallet />} title="Aucun compte" description="Ajoute ton compte courant, ton livret, tes espèces… Chaque compte démarre avec un solde initial." />
       ) : (
@@ -95,6 +121,7 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
           </div>
         </>
       )}
+      <BankConnections available={bank.available} unavailableMessage={bank.message} connections={connections} manualAccounts={manualAccounts} />
     </div>
   );
 }

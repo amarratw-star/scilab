@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC = ["/connexion", "/inscription", "/mot-de-passe-oublie", "/reinitialiser", "/confidentialite", "/hors-ligne", "/api/cron"];
+const PUBLIC = ["/connexion", "/inscription", "/mot-de-passe-oublie", "/reinitialiser", "/confidentialite", "/hors-ligne", "/api/cron", "/api/webhooks", "/confidentialite-bancaire"];
 
 /**
  * Filtre de premier niveau : sans cookie de session, redirection vers la connexion.
