@@ -7,6 +7,7 @@ import { generateNotifications } from "@/server/services/notifications";
 import { purgeOldDemoAccounts } from "@/server/services/user";
 import { purgeExpiredSessions } from "@/server/auth/session";
 import { lt, sql } from "drizzle-orm";
+import { withCurrency } from "@/server/currency";
 
 /** Tâche quotidienne : notifications (dont bilans), nettoyage des sessions, jetons et espaces de démo expirés. */
 export async function GET(req: Request) {
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
   let created = 0;
   for (const u of users) {
     try {
-      created += await runAsUser(u, (ctx) => generateNotifications(ctx));
+      created += await withCurrency(u.currency, () => runAsUser(u, (ctx) => generateNotifications(ctx)));
     } catch (e) {
       console.error("[cron] notifications", u.id, e);
     }

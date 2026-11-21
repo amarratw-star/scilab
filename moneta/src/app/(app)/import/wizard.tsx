@@ -136,7 +136,7 @@ export function ImportWizard() {
                 <thead className="bg-surface-2 text-left"><tr><th className="p-2">Date</th><th className="p-2">Libellé</th><th className="p-2 text-right">Montant</th><th className="p-2">Contrôle</th></tr></thead>
                 <tbody className="divide-y divide-border">
                   {extracted.slice(0, 6).map((r) => (
-                    <tr key={r.index}><td className="p-2">{r.date ? formatDateFR(r.date) : "?"}</td><td className="p-2">{r.label}</td><td className={`tabular p-2 text-right ${(r.amount ?? 0) > 0 ? "text-positive" : ""}`}>{r.amount === null ? "?" : formatMoney(r.amount, "EUR", { signed: true })}</td><td className="p-2">{r.errors.length ? <span className="text-negative">{r.errors.join(", ")}</span> : <span className="text-positive">OK</span>}</td></tr>
+                    <tr key={r.index}><td className="p-2">{r.date ? formatDateFR(r.date) : "?"}</td><td className="p-2">{r.label}</td><td className={`tabular p-2 text-right ${(r.amount ?? 0) > 0 ? "text-positive" : ""}`}>{r.amount === null ? "?" : formatMoney(r.amount, undefined, { signed: true })}</td><td className="p-2">{r.errors.length ? <span className="text-negative">{r.errors.join(", ")}</span> : <span className="text-positive">OK</span>}</td></tr>
                   ))}
                 </tbody>
               </table>
@@ -162,7 +162,7 @@ export function ImportWizard() {
                     <td className="py-1.5"><input type="checkbox" checked={r.include} disabled={r.status === "imported" || r.status === "in_file"} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, include: e.target.checked } : x)))} aria-label="Inclure" /></td>
                     <td className="py-1.5 whitespace-nowrap">{formatDateFR(r.date)}</td>
                     <td className="max-w-64 truncate py-1.5" title={r.label}>{r.label}</td>
-                    <td className={`tabular py-1.5 text-right ${r.amount > 0 ? "text-positive" : ""}`}>{formatMoney(r.amount, "EUR", { signed: true })}</td>
+                    <td className={`tabular py-1.5 text-right ${r.amount > 0 ? "text-positive" : ""}`}>{formatMoney(r.amount, undefined, { signed: true })}</td>
                     <td className="py-1.5 pl-3">
                       <Select aria-label="Catégorie" className="h-8 text-xs" value={r.categoryId ?? ""} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, categoryId: e.target.value || null } : x)))}>
                         <option value="">Non catégorisé</option>

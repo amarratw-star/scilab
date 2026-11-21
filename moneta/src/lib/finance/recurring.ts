@@ -6,6 +6,7 @@
  */
 import { addDays, addMonths, parseISO, type ISODate } from "@/lib/dates";
 import type { Frequency, LedgerTx, RecurringRule } from "./types";
+import { normalizeLabel } from "./labels";
 
 export const FREQUENCY_LABELS: Record<Frequency, string> = {
   weekly: "Hebdomadaire",
@@ -113,15 +114,59 @@ export interface ScheduledItem {
   categoryId: string | null;
   isSubscription: boolean;
   realized: boolean;
+  /** "linked" : opération explicitement rattachée ; "matched" : opération saisie/importée reconnue automatiquement. */
+  realizedBy?: "linked" | "matched";
+  matchedTxId?: string;
+}
+
+const MATCH_WINDOW_DAYS = 6;
+const MATCH_AMOUNT_TOLERANCE = 0.1;
+
+function dayNum(s: ISODate) {
+  return parseDays(s);
+}
+
+/**
+ * Une échéance non rattachée est considérée comme déjà payée si une opération (effectuée ou prévue)
+ * NON liée à une récurrence correspond : même type, même compte (et même destination pour un transfert),
+ * montant à ±10 %, date à ±6 jours, et même catégorie ou libellé apparenté.
+ * Évite de déduire deux fois une charge saisie à la main ou importée par CSV.
+ * Chaque opération ne peut correspondre qu'à une seule échéance.
+ */
+function txMatchesRule(t: LedgerTx, r: RecurringRule, date: ISODate): boolean {
+  if (t.recurringId || t.status === "cancelled" || t.kind !== r.kind || t.accountId !== r.accountId) return false;
+  if (r.kind === "transfer" && t.toAccountId !== r.toAccountId) return false;
+  if (Math.abs(t.amount - r.amount) > Math.max(100, r.amount * MATCH_AMOUNT_TOLERANCE)) return false;
+  if (Math.abs(dayNum(t.date) - dayNum(date)) > MATCH_WINDOW_DAYS) return false;
+  if (r.kind === "transfer") return true;
+  if (r.categoryId && t.categoryId && r.categoryId === t.categoryId) return true;
+  const a = normalizeLabel(`${t.merchant ?? ""} ${t.description ?? ""}`);
+  const words = normalizeLabel(`${r.merchant ?? ""} ${r.name}`).split(" ").filter((w) => w.length >= 4);
+  return words.some((w) => a.includes(w));
 }
 
 /** Échéances de toutes les règles actives dans [from, to], marquées réalisées ou non. */
 export function scheduledItems(rules: RecurringRule[], txs: LedgerTx[], from: ISODate, to: ISODate): ScheduledItem[] {
   const done = realizedKeys(txs);
   const items: ScheduledItem[] = [];
+  const used = new Set<string>();
+  const candidates = txs.filter((t) => !t.recurringId && t.status !== "cancelled" && t.date >= addDays(from, -MATCH_WINDOW_DAYS) && t.date <= addDays(to, MATCH_WINDOW_DAYS));
   for (const r of rules) {
     for (const date of occurrences(r, from, to)) {
+      const linked = done.has(`${r.id}|${date}`);
+      let matchedTxId: string | undefined;
+      if (!linked) {
+        const m = candidates
+          .filter((t) => !used.has(t.id) && txMatchesRule(t, r, date))
+          .sort((x, y) => Math.abs(dayNum(x.date) - dayNum(date)) - Math.abs(dayNum(y.date) - dayNum(date)))[0];
+        if (m) {
+          used.add(m.id);
+          matchedTxId = m.id;
+        }
+      }
       items.push({
+        realizedBy: linked ? "linked" : matchedTxId ? "matched" : undefined,
+        matchedTxId,
         ruleId: r.id,
         name: r.name,
         kind: r.kind,
@@ -131,7 +176,7 @@ export function scheduledItems(rules: RecurringRule[], txs: LedgerTx[], from: IS
         toAccountId: r.toAccountId,
         categoryId: r.categoryId,
         isSubscription: r.isSubscription,
-        realized: done.has(`${r.id}|${date}`),
+        realized: linked || Boolean(matchedTxId),
       });
     }
   }

@@ -26,7 +26,7 @@ export function AccountForm({ initial, today, onDone }: { initial?: AccountFormV
         e.preventDefault();
         const fd = Object.fromEntries(new FormData(e.currentTarget));
         start(async () => {
-          const r = await saveAccountAction(initial?.id ?? null, { ...fd, type, color, icon: ACCOUNT_TYPE_ICONS[type] ?? "wallet", currency: initial?.currency ?? "EUR" });
+          const r = await saveAccountAction(initial?.id ?? null, { ...fd, type, color, icon: ACCOUNT_TYPE_ICONS[type] ?? "wallet", ...(initial?.currency ? { currency: initial.currency } : {}) });
           if (!r.ok) {
             setErrors(r.fieldErrors ?? {});
             toast.error(r.error);

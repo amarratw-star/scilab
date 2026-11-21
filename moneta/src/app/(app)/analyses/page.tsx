@@ -116,9 +116,9 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
                 {trends.map((t) => (
                   <tr key={t.categoryId ?? "none"}>
                     <td className="py-2"><Link href={`/transactions?categorie=${t.categoryId ?? "none"}&periode=perso&du=${from}&au=${to}`} className="hover:underline">{t.name}</Link></td>
-                    <td className="tabular py-2 text-right">{formatMoney(t.current, "EUR", { decimals: false })}</td>
-                    <td className="tabular py-2 text-right text-muted">{formatMoney(t.previous, "EUR", { decimals: false })}</td>
-                    <td className="tabular py-2 text-right text-muted">{t.average3 === null ? "—" : formatMoney(t.average3, "EUR", { decimals: false })}</td>
+                    <td className="tabular py-2 text-right">{formatMoney(t.current, undefined, { decimals: false })}</td>
+                    <td className="tabular py-2 text-right text-muted">{formatMoney(t.previous, undefined, { decimals: false })}</td>
+                    <td className="tabular py-2 text-right text-muted">{t.average3 === null ? "—" : formatMoney(t.average3, undefined, { decimals: false })}</td>
                     <td className="tabular py-2 text-right"><Change cur={t.current} prev={t.previous} inverse /></td>
                   </tr>
                 ))}
@@ -143,14 +143,14 @@ export default async function AnalysesPage({ searchParams }: { searchParams: Pro
                 <div key={label as string}>
                   <p className="mb-1.5 font-medium">{label as string}</p>
                   <div className="grid grid-cols-3 gap-2 rounded-xl bg-surface-2 p-3 text-xs">
-                    <div><p className="text-subtle">Revenus</p><p className="tabular font-medium">{formatMoney(x.income, "EUR", { decimals: false })}</p><Change cur={x.income} prev={y.income} /></div>
-                    <div><p className="text-subtle">Dépenses</p><p className="tabular font-medium">{formatMoney(x.netExpenses, "EUR", { decimals: false })}</p><Change cur={x.netExpenses} prev={y.netExpenses} inverse /></div>
-                    <div><p className="text-subtle">Épargne</p><p className="tabular font-medium">{formatMoney(x.netSavings, "EUR", { decimals: false })}</p><Change cur={x.netSavings} prev={y.netSavings} /></div>
+                    <div><p className="text-subtle">Revenus</p><p className="tabular font-medium">{formatMoney(x.income, undefined, { decimals: false })}</p><Change cur={x.income} prev={y.income} /></div>
+                    <div><p className="text-subtle">Dépenses</p><p className="tabular font-medium">{formatMoney(x.netExpenses, undefined, { decimals: false })}</p><Change cur={x.netExpenses} prev={y.netExpenses} inverse /></div>
+                    <div><p className="text-subtle">Épargne</p><p className="tabular font-medium">{formatMoney(x.netSavings, undefined, { decimals: false })}</p><Change cur={x.netSavings} prev={y.netSavings} /></div>
                   </div>
                 </div>
               );
             })}
-            <p className="text-xs text-subtle">Revenus par source : {incomes.map((i) => `${i.name} ${formatMoney(i.amount, "EUR", { decimals: false })}`).join(" · ") || "aucun"}</p>
+            <p className="text-xs text-subtle">Revenus par source : {incomes.map((i) => `${i.name} ${formatMoney(i.amount, undefined, { decimals: false })}`).join(" · ") || "aucun"}</p>
           </CardContent>
         </Card>
       </div>

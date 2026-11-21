@@ -90,7 +90,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                         <span key={e.id} className={cn("size-1.5 rounded-full", e.status === "done" ? dotColor[e.type] : "border border-current bg-transparent", e.status === "planned" && { income: "text-positive", expense: "text-negative", transfer: "text-info", savings: "text-[var(--chart-savings)]", goal: "text-warning" }[e.type])} />
                       ))}
                     </span>
-                    {net !== 0 && <span className={cn("tabular mt-0.5 hidden truncate text-[10px] sm:block", net > 0 ? "text-positive" : "text-muted")}>{formatMoney(net, "EUR", { signed: true, decimals: false })}</span>}
+                    {net !== 0 && <span className={cn("tabular mt-0.5 hidden truncate text-[10px] sm:block", net > 0 ? "text-positive" : "text-muted")}>{formatMoney(net, undefined, { signed: true, decimals: false })}</span>}
                   </Link>
                 );
               })}
@@ -113,7 +113,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                       <span className="text-xs text-subtle">{e.sub}</span>
                     </span>
                     <span className="flex flex-col items-end gap-0.5">
-                      {e.amount !== null && <span className={cn("tabular text-sm font-semibold", e.type === "income" && "text-positive")}>{e.type === "goal" ? formatMoney(e.amount) : formatMoney(e.amount, "EUR", { signed: true })}</span>}
+                      {e.amount !== null && <span className={cn("tabular text-sm font-semibold", e.type === "income" && "text-positive")}>{e.type === "goal" ? formatMoney(e.amount) : formatMoney(e.amount, undefined, { signed: true })}</span>}
                       <Badge tone={e.status === "done" ? "positive" : "info"}>{e.status === "done" ? "Effectué" : "Prévu"}</Badge>
                     </span>
                   </li>

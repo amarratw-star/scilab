@@ -6,6 +6,7 @@ import { cache } from "react";
 import { getDb } from "@/server/db";
 import { sessions, users } from "@/server/db/schema";
 import { randomToken, sha256Hex } from "@/server/crypto";
+import { setRequestCurrency } from "@/server/currency";
 
 export const SESSION_COOKIE = "moneta_session";
 const SESSION_DAYS = 30;
@@ -68,6 +69,7 @@ export async function getCurrentUser() {
 export async function requireUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
+  setRequestCurrency(user.currency);
   return user;
 }
 

@@ -55,7 +55,7 @@ export default async function WealthPage() {
     <div>
       <PageHeader title="Mon patrimoine" description="Patrimoine net = total des actifs − total des passifs." actions={<NewWealthItem today={today} />} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Patrimoine net" value={<Money cents={nw.net} tone={nw.net < 0 ? "negative" : "none"} />} hint={prev !== null ? `${formatMoney(nw.net - prev, "EUR", { signed: true })} vs fin du mois dernier` : undefined} />
+        <Stat label="Patrimoine net" value={<Money cents={nw.net} tone={nw.net < 0 ? "negative" : "none"} />} hint={prev !== null ? `${formatMoney(nw.net - prev, undefined, { signed: true })} vs fin du mois dernier` : undefined} />
         <Stat label="Patrimoine brut" accent="positive" value={<Money cents={nw.gross} />} hint="Comptes + autres actifs" />
         <Stat label="Comptes (financier)" accent="info" value={<Money cents={nw.accountsTotal} />} />
         <Stat label="Passifs" accent="negative" value={<Money cents={nw.liabilitiesTotal} />} hint="Capital restant dû déclaré" />

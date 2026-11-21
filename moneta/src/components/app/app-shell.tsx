@@ -11,10 +11,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { logoutAction } from "@/app/actions/auth";
 import { CommandPalette } from "./command-palette";
 import { QuickAddDialog, type QuickAddPreset } from "@/components/forms/quick-add";
+import { CurrencyProvider } from "./currency";
 
 export type RefAccount = { id: string; name: string; type: string; color: string; icon: string };
 export type RefCategory = { id: string; name: string; kind: "expense" | "income"; parentId: string | null; icon: string; color: string };
-export type RefData = { accounts: RefAccount[]; categories: RefCategory[]; unread: number; today: string };
+export type RefData = { accounts: RefAccount[]; categories: RefCategory[]; unread: number; today: string; currency: string };
 
 const RefContext = createContext<RefData | null>(null);
 const QuickAddContext = createContext<(preset?: QuickAddPreset) => void>(() => {});
@@ -58,6 +59,7 @@ export function AppShell({ user, refData, children }: { user: { displayName: str
   const demo = user.isDemo || user.hasDemoData;
 
   return (
+    <CurrencyProvider currency={refData.currency}>
     <RefContext.Provider value={refData}>
       <QuickAddContext.Provider value={openQuick}>
         <div className="min-h-dvh lg:pl-64">
@@ -201,6 +203,7 @@ export function AppShell({ user, refData, children }: { user: { displayName: str
         </div>
       </QuickAddContext.Provider>
     </RefContext.Provider>
+    </CurrencyProvider>
   );
 }
 

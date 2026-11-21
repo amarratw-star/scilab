@@ -56,7 +56,7 @@ export async function accountBalance(ctx: Ctx, id: string) {
     .select()
     .from(s.transactions)
     .where(or(eq(s.transactions.accountId, id), eq(s.transactions.toAccountId, id)));
-  return computeBalances([toLedgerAccount(acc)], txs.map(toLedgerTx)).get(id)!;
+  return computeBalances([toLedgerAccount(acc)], txs.map(toLedgerTx), ctx.today).get(id)!;
 }
 
 /**

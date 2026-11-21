@@ -153,7 +153,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     {av.lines.filter((l) => l.amount !== 0 || l.label.startsWith("Solde")).map((l) => (
                       <div key={l.label} className="flex justify-between gap-3">
                         <dt className="text-muted">{l.label}</dt>
-                        <dd className="tabular font-medium">{formatMoney(l.amount, "EUR", { signed: l.amount < 0 })}</dd>
+                        <dd className="tabular font-medium">{formatMoney(l.amount, undefined, { signed: l.amount < 0 })}</dd>
                       </div>
                     ))}
                   </dl>
@@ -250,7 +250,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   <div className="mb-1.5 flex items-center justify-between gap-2 text-sm">
                     <span className="truncate font-medium">{b.budget.name}</span>
                     <span className="tabular text-xs text-muted">
-                      {formatMoney(b.spent, "EUR", { decimals: false })} / {formatMoney(b.effectiveAmount, "EUR", { decimals: false })}
+                      {formatMoney(b.spent, undefined, { decimals: false })} / {formatMoney(b.effectiveAmount, undefined, { decimals: false })}
                     </span>
                   </div>
                   <Progress value={b.ratio} label={b.budget.name} />
@@ -293,7 +293,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                       </span>
                       <span className="flex items-center gap-2">
                         <Badge tone="info">Prévu</Badge>
-                        <span className={`tabular text-sm font-semibold ${u.kind === "income" ? "text-positive" : ""}`}>{formatMoney(u.kind === "income" ? u.amount : -u.amount, "EUR", { signed: true })}</span>
+                        <span className={`tabular text-sm font-semibold ${u.kind === "income" ? "text-positive" : ""}`}>{formatMoney(u.kind === "income" ? u.amount : -u.amount, undefined, { signed: true })}</span>
                       </span>
                     </li>
                   ))}

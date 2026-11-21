@@ -43,7 +43,7 @@ export default async function AvailablePage() {
                   {av.lines.map((l) => (
                     <div key={l.label} className="flex items-start justify-between gap-4 py-2.5">
                       <dt className="text-sm">{l.label}{l.hint && <span className="block text-xs text-subtle">{l.hint}</span>}</dt>
-                      <dd className={`tabular text-sm font-medium ${l.amount < 0 ? "text-negative" : ""}`}>{formatMoney(l.amount, "EUR", { signed: l.amount < 0 })}</dd>
+                      <dd className={`tabular text-sm font-medium ${l.amount < 0 ? "text-negative" : ""}`}>{formatMoney(l.amount, undefined, { signed: l.amount < 0 })}</dd>
                     </div>
                   ))}
                   <div className="flex justify-between gap-4 py-3 text-base font-semibold">
@@ -67,11 +67,11 @@ export default async function AvailablePage() {
                       {items.map((i) => (
                         <li key={i.ruleId + i.date} className="flex items-center justify-between gap-3 py-2">
                           <span>{i.name} <span className="text-xs text-subtle">· {formatDateFR(i.date)}</span></span>
-                          <span className="flex items-center gap-2">{i.date < today && <Badge tone="warning">À confirmer</Badge>}<span className={`tabular ${i.kind === "income" ? "text-positive" : ""}`}>{formatMoney(i.kind === "income" ? i.amount : -i.amount, "EUR", { signed: true })}</span></span>
+                          <span className="flex items-center gap-2">{i.date < today && <Badge tone="warning">À confirmer</Badge>}<span className={`tabular ${i.kind === "income" ? "text-positive" : ""}`}>{formatMoney(i.kind === "income" ? i.amount : -i.amount, undefined, { signed: true })}</span></span>
                         </li>
                       ))}
                       {fin.txRows.filter((t) => t.status === "planned" && t.date <= endOfMonth(today)).map((t) => (
-                        <li key={t.id} className="flex justify-between gap-3 py-2"><span>{t.description ?? "Opération prévue"} <span className="text-xs text-subtle">· {formatDateFR(t.date)}</span></span><span className="tabular">{formatMoney(t.kind === "expense" ? -t.amount : t.amount, "EUR", { signed: true })}</span></li>
+                        <li key={t.id} className="flex justify-between gap-3 py-2"><span>{t.description ?? "Opération prévue"} <span className="text-xs text-subtle">· {formatDateFR(t.date)}</span></span><span className="tabular">{formatMoney(t.kind === "expense" ? -t.amount : t.amount, undefined, { signed: true })}</span></li>
                       ))}
                     </ul>
                   )}

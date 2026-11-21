@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         .orderBy(asc(s.categories.sortOrder), asc(s.categories.name)),
       unreadCount(ctx),
     ]);
-    return { accounts: accounts.filter((a) => !a.archivedAt).map(({ archivedAt: _a, ...a }) => a), categories, unread, today: ctx.today };
+    return { accounts: accounts.filter((a) => !a.archivedAt).map(({ archivedAt: _a, ...a }) => a), categories, unread, today: ctx.today, currency: user.currency };
   });
   if (!user.onboardedAt && !user.isDemo && ref.accounts.length === 0) {
     // Premier lancement : assistant de démarrage

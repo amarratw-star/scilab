@@ -59,7 +59,7 @@ export default async function SubscriptionsPage() {
                     <span className="text-xs text-subtle">{formatDateFR(it.date)} · {accounts[it.accountId]}</span>
                   </span>
                   {it.date < today ? <Badge tone="warning">À confirmer</Badge> : it.date === today ? <Badge tone="info">Aujourd&apos;hui</Badge> : <Badge>Prévu</Badge>}
-                  <span className={`tabular w-24 text-right text-sm font-semibold ${it.kind === "income" ? "text-positive" : ""}`}>{formatMoney(it.kind === "income" ? it.amount : -it.amount, "EUR", { signed: true })}</span>
+                  <span className={`tabular w-24 text-right text-sm font-semibold ${it.kind === "income" ? "text-positive" : ""}`}>{formatMoney(it.kind === "income" ? it.amount : -it.amount, undefined, { signed: true })}</span>
                   {it.date <= today ? <OccurrenceActions ruleId={it.ruleId} date={it.date} amount={it.amount} /> : <span className="w-[148px]" />}
                 </li>
               ))}
@@ -113,7 +113,7 @@ export default async function SubscriptionsPage() {
                     </div>
                     <div className="text-right">
                       <p className={`tabular text-sm font-semibold ${r.kind === "income" ? "text-positive" : ""}`}>{formatMoney(r.amount)}</p>
-                      <p className="tabular text-[11px] text-subtle">{formatMoney(monthlyEquivalent(r.amount, r.frequency))}/mois · {formatMoney(annualEquivalent(r.amount, r.frequency), "EUR", { decimals: false })}/an</p>
+                      <p className="tabular text-[11px] text-subtle">{formatMoney(monthlyEquivalent(r.amount, r.frequency))}/mois · {formatMoney(annualEquivalent(r.amount, r.frequency), undefined, { decimals: false })}/an</p>
                     </div>
                     <RecurringMenu rule={{ id: r.id, name: r.name, kind: r.kind as "expense" | "income" | "transfer", amount: r.amount, frequency: r.frequency, startDate: r.startDate, endDate: r.endDate, accountId: r.accountId, toAccountId: r.toAccountId, categoryId: r.categoryId, isSubscription: r.isSubscription, merchant: r.merchant, paymentMethod: r.paymentMethod, status: r.status, notes: r.notes }} />
                   </div>

@@ -60,7 +60,7 @@ export default async function BudgetsPage() {
                   <div className="flex items-end justify-between">
                     <div>
                       <p className="tabular text-2xl font-semibold">{formatMoney(b.spent)}</p>
-                      <p className="text-xs text-muted">sur {formatMoney(b.effectiveAmount)}{b.carryOver ? ` (dont report ${formatMoney(b.carryOver, "EUR", { signed: true })})` : ""}</p>
+                      <p className="text-xs text-muted">sur {formatMoney(b.effectiveAmount)}{b.carryOver ? ` (dont report ${formatMoney(b.carryOver, undefined, { signed: true })})` : ""}</p>
                     </div>
                     <Badge tone={b.level === "exceeded" || b.level === "danger" ? "negative" : b.level === "warning" ? "warning" : "positive"}>{formatPct(b.ratio, 0)} · {BUDGET_LEVEL_LABEL[b.level]}</Badge>
                   </div>
@@ -114,7 +114,7 @@ export default async function BudgetsPage() {
                       const over = spent > s.budget.amount;
                       return (
                         <td key={m} className={`tabular py-2 text-right ${over ? "text-negative" : ""}`}>
-                          {formatMoney(spent, "EUR", { decimals: false })}
+                          {formatMoney(spent, undefined, { decimals: false })}
                           <span className="block text-[11px] text-subtle">{formatPct(spent / s.budget.amount, 0)}</span>
                         </td>
                       );

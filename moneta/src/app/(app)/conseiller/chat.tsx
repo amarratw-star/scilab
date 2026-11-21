@@ -77,7 +77,7 @@ function ProposalCard({ p }: { p: Proposal }) {
       <p className="text-xs font-medium uppercase tracking-wider text-subtle">Proposition — non enregistrée</p>
       <p className="mt-1 text-sm font-medium">{p.description}</p>
       <p className="text-sm text-muted">
-        <span className={p.kind === "income" ? "text-positive" : ""}>{formatMoney(p.kind === "income" ? p.amount : -p.amount, "EUR", { signed: true })}</span> · {formatDateFR(p.date)} · {p.accountName}
+        <span className={p.kind === "income" ? "text-positive" : ""}>{formatMoney(p.kind === "income" ? p.amount : -p.amount, undefined, { signed: true })}</span> · {formatDateFR(p.date)} · {p.accountName}
         {p.categoryName ? ` · ${p.categoryName}` : ""}
       </p>
       {state === "saved" ? (

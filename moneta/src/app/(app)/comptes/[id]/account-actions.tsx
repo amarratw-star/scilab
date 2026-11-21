@@ -78,7 +78,7 @@ export function AccountActions({ account, balance, today, txCount }: { account: 
               </div>
               {gap !== null && (
                 <p className={`text-sm ${gap === 0 ? "text-positive" : "text-warning"}`}>
-                  {gap === 0 ? "Les soldes concordent : rien à corriger." : `Écart de ${formatMoney(gap, "EUR", { signed: true })}. Vérifie d'abord les opérations manquantes ou en double ; sinon, une régularisation traçable sera créée.`}
+                  {gap === 0 ? "Les soldes concordent : rien à corriger." : `Écart de ${formatMoney(gap, undefined, { signed: true })}. Vérifie d'abord les opérations manquantes ou en double ; sinon, une régularisation traçable sera créée.`}
                 </p>
               )}
               <Button
@@ -89,7 +89,7 @@ export function AccountActions({ account, balance, today, txCount }: { account: 
                   start(async () => {
                     const r = await reconcileAccountAction(account.id, actual, date);
                     if (!r.ok) return void toast.error(r.error);
-                    toast.success(r.data?.gap ? `Régularisation de ${formatMoney(r.data.gap, "EUR", { signed: true })} créée` : "Les soldes concordent");
+                    toast.success(r.data?.gap ? `Régularisation de ${formatMoney(r.data.gap, undefined, { signed: true })} créée` : "Les soldes concordent");
                     setDialog(null);
                     router.refresh();
                   })

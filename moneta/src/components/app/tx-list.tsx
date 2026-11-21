@@ -103,7 +103,7 @@ function TxRow({ t, accountNames, perspectiveAccountId, showDate }: { t: TxView;
         </span>
         <span className="flex shrink-0 flex-col items-end gap-0.5">
           <span className={cn("tabular text-sm font-semibold", t.kind === "transfer" || t.kind === "adjustment" ? "text-foreground" : amount > 0 ? "text-positive" : "")}>
-            {formatMoney(amount, "EUR", { signed: true })}
+            {formatMoney(amount, undefined, { signed: true })}
           </span>
           {t.status === "planned" && <Badge tone="info">Prévue</Badge>}
           {t.status === "cancelled" && <Badge>Annulée</Badge>}
@@ -128,7 +128,7 @@ function TxRow({ t, accountNames, perspectiveAccountId, showDate }: { t: TxView;
           <DropdownMenuItem
             destructive
             onSelect={() => {
-              if (window.confirm(`Supprimer « ${title} » (${formatMoney(amount, "EUR", { signed: true })}) ? Les soldes seront recalculés.`)) run(deleteTransactionAction(t.id));
+              if (window.confirm(`Supprimer « ${title} » (${formatMoney(amount, undefined, { signed: true })}) ? Les soldes seront recalculés.`)) run(deleteTransactionAction(t.id));
             }}
           >
             <Trash2 /> Supprimer

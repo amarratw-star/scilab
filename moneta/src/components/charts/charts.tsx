@@ -32,7 +32,7 @@ const axisProps = {
   axisLine: false,
 } as const;
 
-const compactEuro = (v: number) => formatMoney(v, "EUR", { compact: true }).replace(/\s/g, " ");
+const compactEuro = (v: number) => formatMoney(v, undefined, { compact: true }).replace(/\s/g, " ");
 
 function useMounted() {
   const [m, setM] = useState(false);
@@ -183,7 +183,7 @@ export function CategoryDonut({ data, total, height = 200 }: { data: { name: str
           </ResponsiveContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-[11px] text-muted">Total</span>
-            <span className="tabular text-base font-semibold">{formatMoney(total, "EUR", { decimals: false })}</span>
+            <span className="tabular text-base font-semibold">{formatMoney(total, undefined, { decimals: false })}</span>
           </div>
         </div>
       </ChartFrame>
@@ -283,7 +283,7 @@ export function ForecastChart({ data, height = 300, cushion }: { data: { date: s
                       { name: "Normal", value: Number(payload[0].payload.normal), color: "var(--chart-balance)" },
                       { name: "Prudent", value: Number(payload[0].payload.prudent), color: "var(--chart-prudent)" },
                       { name: "Optimiste", value: Number(payload[0].payload.optimistic), color: "var(--chart-optimistic)" },
-                      { name: "Fourchette", value: `${formatMoney(payload[0].payload.low, "EUR", { decimals: false })} – ${formatMoney(payload[0].payload.high, "EUR", { decimals: false })}`, color: "transparent" },
+                      { name: "Fourchette", value: `${formatMoney(payload[0].payload.low, undefined, { decimals: false })} – ${formatMoney(payload[0].payload.high, undefined, { decimals: false })}`, color: "transparent" },
                     ]}
                   />
                 ) : null

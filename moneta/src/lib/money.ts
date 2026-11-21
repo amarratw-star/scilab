@@ -4,6 +4,25 @@
 
 export type Cents = number;
 
+/** Devises proposées. Changer de devise ne convertit JAMAIS les montants : seul l'affichage change. */
+export const SUPPORTED_CURRENCIES = ["EUR", "USD", "GBP", "CHF", "CAD", "XOF", "XPF", "MAD"] as const;
+
+/**
+ * Devise par défaut de l'affichage. Côté serveur, elle est résolue par requête (devise de l'utilisateur
+ * connecté, voir src/server/currency.ts) ; côté client, les composants passent la devise du contexte.
+ */
+let currencyResolver: (() => string | undefined) | null = null;
+export function setCurrencyResolver(fn: () => string | undefined) {
+  currencyResolver = fn;
+}
+export function defaultCurrency(): string {
+  try {
+    return currencyResolver?.() || "EUR";
+  } catch {
+    return "EUR";
+  }
+}
+
 const formatters = new Map<string, Intl.NumberFormat>();
 
 function getFormatter(currency: string, opts: { signed?: boolean; compact?: boolean; decimals?: boolean }) {
@@ -26,7 +45,7 @@ function getFormatter(currency: string, opts: { signed?: boolean; compact?: bool
 /** 123456 -> "1 234,56 €" (espaces insécables normalisés en espaces fines). */
 export function formatMoney(
   cents: Cents | null | undefined,
-  currency = "EUR",
+  currency: string = defaultCurrency(),
   opts: { signed?: boolean; compact?: boolean; decimals?: boolean } = {},
 ): string {
   if (cents === null || cents === undefined || Number.isNaN(cents)) return "—";
@@ -34,7 +53,7 @@ export function formatMoney(
 }
 
 /** Version texte brut (espaces normales) — utile pour le PDF, le CSV et l'IA. */
-export function formatMoneyPlain(cents: Cents | null | undefined, currency = "EUR", opts: { signed?: boolean } = {}) {
+export function formatMoneyPlain(cents: Cents | null | undefined, currency: string = defaultCurrency(), opts: { signed?: boolean } = {}) {
   return formatMoney(cents, currency, opts).replace(/[  ]/g, " ");
 }
 

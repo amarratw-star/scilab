@@ -53,8 +53,8 @@ export default async function ForecastPage({ searchParams }: { searchParams: Pro
         {f.milestones.concat(f.milestones.some((m) => m.days === horizon) ? [] : [{ days: horizon, date: end.date, prudent: end.prudent, normal: end.normal, optimistic: end.optimistic, low: end.low, high: end.high }]).map((m) => (
           <div key={m.days} className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
             <p className="text-[13px] text-muted">Dans {m.days} jours <span className="text-subtle">({formatDateFR(m.date)})</span></p>
-            <p className={`tabular mt-1 text-2xl font-semibold ${m.normal < 0 ? "text-negative" : ""}`}>{formatMoney(m.normal, "EUR", { decimals: false })}</p>
-            <p className="tabular text-xs text-subtle">entre {formatMoney(m.low, "EUR", { decimals: false })} et {formatMoney(m.high, "EUR", { decimals: false })}</p>
+            <p className={`tabular mt-1 text-2xl font-semibold ${m.normal < 0 ? "text-negative" : ""}`}>{formatMoney(m.normal, undefined, { decimals: false })}</p>
+            <p className="tabular text-xs text-subtle">entre {formatMoney(m.low, undefined, { decimals: false })} et {formatMoney(m.high, undefined, { decimals: false })}</p>
           </div>
         ))}
       </div>

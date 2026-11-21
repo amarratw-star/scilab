@@ -1,3 +1,4 @@
+import { formatMoneyPlain } from "@/lib/money";
 /**
  * Simulateur : tester une décision avant de la prendre. Aucune projection n'est une garantie.
  */

@@ -41,8 +41,12 @@ export function computeOverview(fin: Finance, today: ISODate, settings: UserSett
   const fixedPaid = fin.txs
     .filter((t) => t.status === "posted" && t.kind === "expense" && t.date >= monthStart && t.date <= monthEnd && isFixedExpense(t, fin.cmap))
     .reduce((s, t) => s + t.amount, 0);
-  const pendingItems = scheduledItems(fin.rules, fin.txs, monthStart, monthEnd).filter((i) => !i.realized && i.kind === "expense");
-  const fixedPending = pendingItems.reduce((s, i) => s + i.amount, 0);
+  const monthItems = scheduledItems(fin.rules, fin.txs, monthStart, monthEnd).filter((i) => !i.realized);
+  const fixedPending = monthItems.filter((i) => i.kind === "expense").reduce((s, i) => s + i.amount, 0);
+  // Revenus attendus du mois (récurrents non encore reçus + revenus prévus) — jamais ajoutés au solde réel.
+  const expectedIncomeMonth =
+    monthItems.filter((i) => i.kind === "income").reduce((s, i) => s + i.amount, 0) +
+    fin.txs.filter((t) => t.kind === "income" && t.date >= monthStart && t.date <= monthEnd && (t.status === "planned" || (t.status === "posted" && t.date > today)) && !t.recurringId).reduce((s, t) => s + t.amount, 0);
   return {
     today,
     month,
@@ -51,7 +55,11 @@ export function computeOverview(fin: Finance, today: ISODate, settings: UserSett
     available,
     fixedPaid,
     fixedPending,
-    resteAVivre: resteAVivre(month.income, fixedPaid, fixedPending),
+    expectedIncomeMonth,
+    /** Reste à vivre prévisionnel du mois : revenus du mois (encaissés + attendus) − charges fixes du mois. */
+    resteAVivre: resteAVivre(month.income + expectedIncomeMonth, fixedPaid, fixedPending),
+    /** Même calcul limité aux revenus déjà encaissés. */
+    resteAVivreEncaisse: resteAVivre(month.income, fixedPaid, fixedPending),
     summary: fin.summary,
   };
 }

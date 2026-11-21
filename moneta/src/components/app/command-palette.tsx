@@ -79,7 +79,7 @@ export function CommandPalette({ open, onOpenChange, onQuickAdd }: { open: boole
                         </span>
                         {h.amount !== undefined && (
                           <span className={`tabular text-sm ${h.kind === "expense" ? "text-negative" : h.kind === "income" || h.kind === "refund" ? "text-positive" : ""}`}>
-                            {formatMoney(h.kind === "expense" ? -h.amount : h.amount, "EUR", { signed: h.kind === "expense" || h.kind === "income" })}
+                            {formatMoney(h.kind === "expense" ? -h.amount : h.amount, undefined, { signed: h.kind === "expense" || h.kind === "income" })}
                           </span>
                         )}
                       </Command.Item>

@@ -185,7 +185,7 @@ function IncomeChange({ avgIncome, avgExpenses, hasHistory }: { avgIncome: numbe
           <Row label="Dépenses moyennes actuelles" value={formatMoney(avgExpenses)} />
           <Row label="Épargne mensuelle avant → après" value={`${formatMoney(r.savingsBefore)} → ${formatMoney(r.savingsAfter)}`} tone={r.savingsAfter >= r.savingsBefore ? "pos" : "neg"} />
           <Row label="Taux d'épargne avant → après" value={`${formatPct(r.rateBefore)} → ${formatPct(r.rateAfter)}`} />
-          <Row label="Différence sur un an" value={formatMoney(r.annualDifference, "EUR", { signed: true })} tone={r.annualDifference >= 0 ? "pos" : "neg"} />
+          <Row label="Différence sur un an" value={formatMoney(r.annualDifference, undefined, { signed: true })} tone={r.annualDifference >= 0 ? "pos" : "neg"} />
         </CardContent>
       </Card>
     </div>
@@ -202,7 +202,7 @@ function Scenarios({ s }: { s: Props["scenarios"] }) {
           <thead><tr className="text-left text-xs text-subtle"><th className="pb-2 font-medium">Horizon</th><th className="pb-2 text-right font-medium">Prudent</th><th className="pb-2 text-right font-medium">Normal</th><th className="pb-2 text-right font-medium">Optimiste</th></tr></thead>
           <tbody className="divide-y divide-border">
             {s.milestones.map((m) => (
-              <tr key={m.days}><td className="py-2">Dans {m.days} jours <span className="text-xs text-subtle">({formatDateFR(m.date)})</span></td><td className="tabular py-2 text-right">{formatMoney(m.prudent, "EUR", { decimals: false })}</td><td className="tabular py-2 text-right font-medium">{formatMoney(m.normal, "EUR", { decimals: false })}</td><td className="tabular py-2 text-right">{formatMoney(m.optimistic, "EUR", { decimals: false })}</td></tr>
+              <tr key={m.days}><td className="py-2">Dans {m.days} jours <span className="text-xs text-subtle">({formatDateFR(m.date)})</span></td><td className="tabular py-2 text-right">{formatMoney(m.prudent, undefined, { decimals: false })}</td><td className="tabular py-2 text-right font-medium">{formatMoney(m.normal, undefined, { decimals: false })}</td><td className="tabular py-2 text-right">{formatMoney(m.optimistic, undefined, { decimals: false })}</td></tr>
             ))}
           </tbody>
         </table>

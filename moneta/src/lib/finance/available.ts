@@ -105,7 +105,9 @@ export function computeAvailable(input: AvailableInput): AvailableResult {
   // Opérations prévues (hors récurrences déjà comptées) jusqu'à la fin du mois.
   let plannedExpenses = 0;
   for (const tx of input.txs) {
-    if (tx.status !== "planned" || tx.date > monthEnd) continue;
+    // Prévues, ou « effectuées » mais datées après aujourd'hui (pas encore dans le solde réel).
+    const upcoming = tx.status === "planned" || (tx.status === "posted" && tx.date > today);
+    if (!upcoming || tx.date > monthEnd) continue;
     const d = scopeDelta(tx, liquidIds, "posted+planned");
     if (tx.kind === "income" || tx.kind === "refund") {
       if (d > 0 && tx.date >= today) {
@@ -124,7 +126,7 @@ export function computeAvailable(input: AvailableInput): AvailableResult {
   // Épargne déjà mise de côté ce mois-ci : transferts nets des comptes disponibles vers les autres comptes.
   let savedThisMonth = 0;
   for (const tx of input.txs) {
-    if (tx.status !== "posted" || tx.kind !== "transfer" || tx.date < monthStart || tx.date > monthEnd) continue;
+    if (tx.status !== "posted" || tx.kind !== "transfer" || tx.date < monthStart || tx.date > today) continue;
     const fromLiquid = liquidIds.has(tx.accountId);
     const toLiquid = tx.toAccountId ? liquidIds.has(tx.toAccountId) : false;
     if (fromLiquid && !toLiquid) savedThisMonth += tx.amount;

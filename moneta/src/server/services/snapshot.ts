@@ -109,7 +109,8 @@ export async function loadFinance(ctx: Ctx) {
   const categories = categoryRows.map(toCategoryInfo);
   const cmap = categoryMap(categories);
   const rules = ruleRows.map(toRule);
-  const balances = computeBalances(accounts, txs);
+  // Soldes réels à la date du jour : une opération datée dans le futur n'est pas encore dans le solde.
+  const balances = computeBalances(accounts, txs, ctx.today);
   const summary = summarizeBalances(accounts, balances);
   const contributions: Contribution[] = contribRows.map((c) => ({ goalId: c.goalId, amount: c.amount, date: c.date }));
   return {

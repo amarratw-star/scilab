@@ -4,12 +4,17 @@ import { runAsUser, audit } from "@/server/services/context";
 import { loadFinance } from "@/server/services/snapshot";
 import { buildReport, reportPdf, reportXlsx, toCsv, REPORT_LABELS, type ReportKind } from "@/server/services/reports";
 import { formatDateFR } from "@/lib/dates";
+import { withCurrency } from "@/server/currency";
 
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
   const user = await getCurrentUser();
   if (!user) return new NextResponse("Non authentifié", { status: 401 });
+  return withCurrency(user.currency, () => handle(req, user));
+}
+
+async function handle(req: Request, user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>) {
   const sp = new URL(req.url).searchParams;
   const kind = (Object.keys(REPORT_LABELS).find((k) => k === sp.get("type")) ?? "monthly") as ReportKind;
   const format = ["pdf", "csv", "xlsx"].includes(sp.get("format") ?? "") ? sp.get("format")! : "pdf";

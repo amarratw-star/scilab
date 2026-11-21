@@ -268,7 +268,7 @@ export const loginSchema = z.object({
 
 export const settingsSchema = z.object({
   displayName: z.string().trim().min(1).max(60),
-  currency: z.string().regex(/^[A-Z]{3}$/),
+  currency: z.enum(["EUR", "USD", "GBP", "CHF", "CAD", "XOF", "XPF", "MAD"]),
   timezone: z.string().min(1).max(60),
   safetyCushion: nonNegativeAmount,
   monthlySavingsTarget: nonNegativeAmount,

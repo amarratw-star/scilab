@@ -92,8 +92,8 @@ function Profile({ user }: Props) {
         }}
       >
         <Field label="Prénom" htmlFor="pname" error={errors.displayName}><Input id="pname" name="displayName" defaultValue={user.displayName} required maxLength={60} /></Field>
-        <Field label="Devise" htmlFor="pcur" hint="Les montants sont affichés dans cette devise (pas de conversion).">
-          <Select id="pcur" name="currency" defaultValue={user.currency}>{["EUR", "CHF", "GBP", "USD", "CAD", "XOF", "XPF", "MAD"].map((c) => <option key={c} value={c}>{c}</option>)}</Select>
+        <Field label="Devise d'affichage" htmlFor="pcur" hint="Change le symbole affiché partout. Les montants ne sont PAS convertis : aucune source de taux de change n'est configurée. Choisis la devise dans laquelle tu saisis tes opérations.">
+          <Select id="pcur" name="currency" defaultValue={user.currency}>{["EUR", "USD", "GBP", "CHF", "CAD", "XOF", "XPF", "MAD"].map((c) => <option key={c} value={c}>{c}</option>)}</Select>
         </Field>
         <Field label="Fuseau horaire" htmlFor="ptz" error={errors.timezone} hint="Détermine la « date du jour » pour tous les calculs.">
           <Select id="ptz" name="timezone" defaultValue={user.timezone}>{(TIMEZONES.includes(user.timezone) ? TIMEZONES : [user.timezone, ...TIMEZONES]).map((t) => <option key={t} value={t}>{t}</option>)}</Select>

@@ -7,6 +7,7 @@ import { loadFinance } from "@/server/services/snapshot";
 import { askAssistant } from "@/server/ai/assistant";
 import { rateLimit } from "@/server/auth/rate-limit";
 import { features } from "@/server/env";
+import { withCurrency } from "@/server/currency";
 
 export const maxDuration = 120;
 
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
   try {
     const { fin, today, settings } = await runAsUser(user, async (ctx) => ({ fin: await loadFinance(ctx), today: ctx.today, settings: ctx.settings }));
-    const result = await askAssistant({ history: parsed.data.messages, fin, today, settings, displayName: user.displayName });
+    const result = await withCurrency(user.currency, () => askAssistant({ history: parsed.data.messages, fin, today, settings, displayName: user.displayName }));
     return NextResponse.json(result);
   } catch (e) {
     if (e instanceof Anthropic.AuthenticationError) return NextResponse.json({ error: "Clé API IA invalide : vérifie ANTHROPIC_API_KEY." }, { status: 502 });

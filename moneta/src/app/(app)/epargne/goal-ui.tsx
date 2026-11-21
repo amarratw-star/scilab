@@ -167,7 +167,7 @@ export function GoalActions({ goal, accounts, history }: { goal: G; accounts: Ac
                   <li key={h.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                     <span><span className="block">{formatDateFR(h.date)}</span><span className="text-xs text-muted">{h.note}</span></span>
                     <span className="flex items-center gap-2">
-                      <span className={`tabular font-medium ${h.amount > 0 ? "text-positive" : "text-negative"}`}>{formatMoney(h.amount, "EUR", { signed: true })}</span>
+                      <span className={`tabular font-medium ${h.amount > 0 ? "text-positive" : "text-negative"}`}>{formatMoney(h.amount, undefined, { signed: true })}</span>
                       <button className="rounded p-1 text-subtle hover:text-negative" aria-label="Supprimer ce versement" onClick={async () => { if (confirm("Supprimer ce versement ? Le virement réel éventuel reste dans tes opérations.")) done(await deleteContributionAction(h.id)); }}><Trash2 className="size-3.5" /></button>
                     </span>
                   </li>

@@ -64,7 +64,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             <section>
               <h3 className="mb-2 text-sm font-semibold">7. Patrimoine financier</h3>
               <p className="text-sm">{formatMoney(r.startBalances.totalFinancial)} → <strong>{formatMoney(r.endBalances.totalFinancial)}</strong></p>
-              <p className="text-xs text-muted">Variation : {formatMoney(r.endBalances.totalFinancial - r.startBalances.totalFinancial, "EUR", { signed: true })}</p>
+              <p className="text-xs text-muted">Variation : {formatMoney(r.endBalances.totalFinancial - r.startBalances.totalFinancial, undefined, { signed: true })}</p>
             </section>
             <section>
               <h3 className="mb-2 text-sm font-semibold">8. Points d&apos;attention</h3>

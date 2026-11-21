@@ -50,7 +50,7 @@ export async function confirmPlannedAction(txId: string, date: string) {
 export async function saveAccountAction(accountId: string | null, input: Record<string, unknown>) {
   return act(
     async (ctx) => {
-      const data = accountSchema.parse(input);
+      const data = accountSchema.parse({ currency: ctx.currency, ...input });
       const row = accountId ? await accounts.updateAccount(ctx, id.parse(accountId), data) : await accounts.createAccount(ctx, data);
       return { id: row.id };
     },
