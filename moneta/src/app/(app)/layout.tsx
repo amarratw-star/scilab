@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   const ref = await runAsUser(user, async (ctx) => {
     const [accounts, categories, unread] = await Promise.all([
-      ctx.tx.select({ id: s.accounts.id, name: s.accounts.name, type: s.accounts.type, color: s.accounts.color, icon: s.accounts.icon, archivedAt: s.accounts.archivedAt }).from(s.accounts).orderBy(asc(s.accounts.sortOrder)),
+      ctx.tx.select({ id: s.accounts.id, name: s.accounts.name, type: s.accounts.type, color: s.accounts.color, icon: s.accounts.icon, currency: s.accounts.currency, archivedAt: s.accounts.archivedAt }).from(s.accounts).orderBy(asc(s.accounts.sortOrder)),
       ctx.tx
         .select({ id: s.categories.id, name: s.categories.name, kind: s.categories.kind, parentId: s.categories.parentId, icon: s.categories.icon, color: s.categories.color })
         .from(s.categories)

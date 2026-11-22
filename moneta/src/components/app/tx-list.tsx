@@ -63,7 +63,10 @@ export function TxList({ rows, accountNames, groupByDate = true, perspectiveAcco
 }
 
 function TxRow({ t, accountNames, perspectiveAccountId, showDate }: { t: TxView; accountNames: Record<string, string>; perspectiveAccountId?: string; showDate: boolean }) {
-  const { categories, today } = useRefData();
+  const { categories, today, accounts, currency: userCurrency } = useRefData();
+  // Opération d'un compte dans une autre devise : affichée dans la devise du compte
+  const txCurrency = accounts.find((a) => a.id === t.accountId)?.currency;
+  const cur = txCurrency && txCurrency !== userCurrency ? txCurrency : undefined;
   const open = useQuickAdd();
   const router = useRouter();
   const cat = t.categoryId ? categories.find((c) => c.id === t.categoryId) : undefined;
@@ -106,7 +109,7 @@ function TxRow({ t, accountNames, perspectiveAccountId, showDate }: { t: TxView;
         </span>
         <span className="flex shrink-0 flex-col items-end gap-0.5">
           <span className={cn("tabular text-sm font-semibold", t.kind === "transfer" || t.kind === "adjustment" ? "text-foreground" : amount > 0 ? "text-positive" : "")}>
-            {formatMoney(amount, undefined, { signed: true })}
+            {formatMoney(amount, cur, { signed: true })}
           </span>
           {t.bank?.unverified && t.status !== "cancelled" && <Badge tone="solid">Nouvelle</Badge>}
           {t.status === "planned" && <Badge tone="info">{t.bank?.pending ? "En attente" : "Prévue"}</Badge>}
@@ -132,7 +135,7 @@ function TxRow({ t, accountNames, perspectiveAccountId, showDate }: { t: TxView;
           <DropdownMenuItem
             destructive
             onSelect={() => {
-              if (window.confirm(`Supprimer « ${title} » (${formatMoney(amount, undefined, { signed: true })}) ? Les soldes seront recalculés.`)) run(deleteTransactionAction(t.id));
+              if (window.confirm(`Supprimer « ${title} » (${formatMoney(amount, cur, { signed: true })}) ? Les soldes seront recalculés.`)) run(deleteTransactionAction(t.id));
             }}
           >
             <Trash2 /> Supprimer

@@ -123,7 +123,7 @@ export function BankConnections({ available, unavailableMessage, connections, ma
                         </p>
                       </div>
                       <div className="text-right">
-                        {a.bankBalance !== null ? <Money cents={a.bankBalance} className="text-sm font-medium" /> : <span className="text-xs text-subtle">Solde non communiqué</span>}
+                        {a.bankBalance !== null ? <Money cents={a.bankBalance} currency={a.currency ?? undefined} className="text-sm font-medium" /> : <span className="text-xs text-subtle">Solde non communiqué</span>}
                         {a.balanceAt && <p className="text-[11px] text-subtle">au {fmt(a.balanceAt)}</p>}
                       </div>
                       <label className="flex items-center gap-2 text-xs text-muted">

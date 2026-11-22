@@ -43,7 +43,9 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
   const active = fin.accountRows.filter((a) => !a.archivedAt);
   const archived = fin.accountRows.filter((a) => a.archivedAt);
   const bal = (id: string) => fin.balances.get(id) ?? 0;
-  const positiveTotal = active.reduce((s, a) => s + Math.max(0, bal(a.id)), 0);
+  const foreign = (id: string) => fin.foreignAccountIds.has(id);
+  const domestic = active.filter((a) => !foreign(a.id));
+  const positiveTotal = domestic.reduce((s, a) => s + Math.max(0, bal(a.id)), 0);
   const groups = Object.entries(
     active.reduce<Record<string, typeof active>>((acc, a) => {
       (acc[a.type] ??= []).push(a);
@@ -85,9 +87,9 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
                           </div>
                         </div>
                         <p className="mt-4 text-2xl font-semibold tracking-tight">
-                          <Money cents={bal(a.id)} tone={bal(a.id) < 0 ? "negative" : "none"} />
+                          <Money cents={bal(a.id)} currency={foreign(a.id) ? a.currency : undefined} tone={bal(a.id) < 0 ? "negative" : "none"} />
                         </p>
-                        <p className="text-xs text-subtle">{positiveTotal ? `${formatPct(Math.max(0, bal(a.id)) / positiveTotal, 0)} de ton argent` : ""}</p>
+                        <p className="text-xs text-subtle">{foreign(a.id) ? `Compte en ${a.currency} : hors totaux (aucune conversion de devise)` : positiveTotal ? `${formatPct(Math.max(0, bal(a.id)) / positiveTotal, 0)} de ton argent` : ""}</p>
                       </Link>
                     ))}
                   </div>
@@ -100,7 +102,7 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
                     {archived.map((a) => (
                       <Link key={a.id} href={`/comptes/${a.id}`} className="flex items-center justify-between px-4 py-3 text-sm hover:bg-surface-2">
                         <span>{a.name} <Badge>Archivé</Badge></span>
-                        <Money cents={bal(a.id)} className="text-muted" />
+                        <Money cents={bal(a.id)} currency={foreign(a.id) ? a.currency : undefined} className="text-muted" />
                       </Link>
                     ))}
                   </div>
@@ -115,7 +117,7 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
                 </div>
               </CardHeader>
               <CardContent>
-                <CategoryDonut data={active.filter((a) => bal(a.id) > 0).sort((x, y) => bal(y.id) - bal(x.id)).map((a) => ({ name: a.name, amount: bal(a.id), color: a.color, share: positiveTotal ? bal(a.id) / positiveTotal : null }))} total={positiveTotal} />
+                <CategoryDonut data={domestic.filter((a) => bal(a.id) > 0).sort((x, y) => bal(y.id) - bal(x.id)).map((a) => ({ name: a.name, amount: bal(a.id), color: a.color, share: positiveTotal ? bal(a.id) / positiveTotal : null }))} total={positiveTotal} />
               </CardContent>
             </Card>
           </div>

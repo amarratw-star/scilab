@@ -104,13 +104,19 @@ export async function loadFinance(ctx: Ctx) {
     tx.select().from(s.goals).where(isNull(s.goals.archivedAt)).orderBy(asc(s.goals.priority), asc(s.goals.createdAt)),
     tx.select().from(s.goalContributions).orderBy(asc(s.goalContributions.date)),
   ]);
-  const accounts = accountRows.map(toLedgerAccount);
-  const txs = txRows.map(toLedgerTx);
+  // Comptes dans une autre devise que celle de l'utilisateur (ex. compte en USD importé de la banque) :
+  // aucun taux de change n'est configuré, donc ils sont exclus des totaux, statistiques, budgets et prévisions
+  // (jamais additionnés à des euros), mais leur solde propre reste calculé et affiché dans leur devise.
+  const foreignAccountIds = new Set(accountRows.filter((a) => a.currency && a.currency !== ctx.currency).map((a) => a.id));
+  const allAccounts = accountRows.map(toLedgerAccount);
+  const accounts = allAccounts.map((a) => (foreignAccountIds.has(a.id) ? { ...a, archived: true } : a));
+  const allTxs = txRows.map(toLedgerTx);
+  const txs = foreignAccountIds.size ? allTxs.filter((t) => !foreignAccountIds.has(t.accountId)) : allTxs;
   const categories = categoryRows.map(toCategoryInfo);
   const cmap = categoryMap(categories);
   const rules = ruleRows.map(toRule);
   // Soldes réels à la date du jour : une opération datée dans le futur n'est pas encore dans le solde.
-  const balances = computeBalances(accounts, txs, ctx.today);
+  const balances = computeBalances(allAccounts, allTxs, ctx.today);
   const summary = summarizeBalances(accounts, balances);
   const contributions: Contribution[] = contribRows.map((c) => ({ goalId: c.goalId, amount: c.amount, date: c.date }));
   return {
@@ -123,6 +129,8 @@ export async function loadFinance(ctx: Ctx) {
     contribRows,
     accounts,
     txs,
+    allTxs,
+    foreignAccountIds,
     categories,
     cmap,
     rules,

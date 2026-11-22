@@ -13,7 +13,7 @@ import { CommandPalette } from "./command-palette";
 import { QuickAddDialog, type QuickAddPreset } from "@/components/forms/quick-add";
 import { CurrencyProvider } from "./currency";
 
-export type RefAccount = { id: string; name: string; type: string; color: string; icon: string };
+export type RefAccount = { id: string; name: string; type: string; color: string; icon: string; currency?: string };
 export type RefCategory = { id: string; name: string; kind: "expense" | "income"; parentId: string | null; icon: string; color: string };
 export type RefData = { accounts: RefAccount[]; categories: RefCategory[]; unread: number; today: string; currency: string };
 

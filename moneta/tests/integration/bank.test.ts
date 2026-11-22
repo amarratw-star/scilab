@@ -408,6 +408,46 @@ describe("synchronisation « pull » face aux erreurs de Powens", () => {
   });
 });
 
+describe("carte à débit différé et comptes en devise étrangère", () => {
+  const conn2 = { ...conn, id: 7002, connector: { ...conn.connector, name: "Banque Test 2" } };
+  const C: PowensAccount = { id: 601, id_connection: 7002, name: "Courant 2", balance: 1000, currency: { id: "EUR" }, type: "checking" };
+  const K: PowensAccount = { id: 602, id_connection: 7002, id_parent: 601, name: "Carte différée", balance: -50, currency: { id: "EUR" }, type: "card" };
+  const U: PowensAccount = { id: 603, id_connection: 7002, name: "Compte USD", balance: 2000, currency: { id: "USD" }, type: "checking" };
+
+  it("le prélèvement mensuel de la carte (summary_card) devient un transfert : dépenses comptées une seule fois", async () => {
+    await as(user, (ctx) =>
+      ingestConnection(ctx, conn2, [C, K, U], [T(800, 602, "2026-03-05", -30, "CB LIBRAIRIE", { type: "deferred_card" }), T(801, 602, "2026-03-08", -20, "CB CINEMA", { type: "deferred_card" }), T(802, 601, "2026-03-18", -50, "RELEVE CARTE DIFFEREE", { type: "summary_card" })], "callback"),
+    );
+    const txs = await txOf(user);
+    const summary = txs.find((t) => t.externalId === "802")!;
+    expect(summary.kind).toBe("transfer");
+    expect(summary.toAccountId).toBe(await accountId("602"));
+    expect(summary.categoryId).toBeNull();
+    expect(txs.filter((t) => ["800", "801"].includes(t.externalId ?? "")).every((t) => t.kind === "expense")).toBe(true);
+    const fin = await as(user, (ctx) => loadFinance(ctx));
+    expect(fin.balances.get(await accountId("601"))).toBe(100000);
+    expect(fin.balances.get(await accountId("602"))).toBe(-5000);
+  });
+
+  it("une connexion réussie met à jour la date de dernière synchronisation", async () => {
+    const [c] = await as(user, (ctx) => ctx.tx.select().from(s.bankConnections).where(eq(s.bankConnections.externalConnectionId, "7002")));
+    expect(c.lastSyncAt).not.toBeNull();
+  });
+
+  it("un compte dans une autre devise n'est jamais additionné aux euros", async () => {
+    const usd = await accountId("603");
+    await as(user, (ctx) => ingestConnection(ctx, conn2, [{ ...U, balance: 1900 }], [T(803, 603, "2026-03-19", -100, "CB NEW YORK SHOP")], "webhook"));
+    const fin = await as(user, (ctx) => loadFinance(ctx));
+    expect(fin.foreignAccountIds.has(usd)).toBe(true);
+    expect(fin.balances.get(usd)).toBe(190000); // solde propre en USD calculé normalement
+    expect(fin.summary.byAccount.find((a) => a.id === usd)?.archived).toBe(true); // exclu des totaux
+    expect(fin.txs.some((t) => t.accountId === usd)).toBe(false); // exclu des statistiques et budgets
+    expect(fin.allTxs.some((t) => t.accountId === usd)).toBe(true);
+    const totalWithout = fin.summary.byAccount.filter((a) => !a.archived).reduce((s2, a) => s2 + a.balance, 0);
+    expect(fin.summary.totalFinancial).toBe(totalWithout);
+  });
+});
+
 describe("gestion des comptes et connexions", () => {
   it("suspendre la synchronisation d'un compte : ses opérations ne sont plus importées", async () => {
     const acc = await accountId("502");
@@ -430,8 +470,7 @@ describe("gestion des comptes et connexions", () => {
 
   it("supprimer une connexion en conservant les données : comptes devenus manuels, opérations intactes", async () => {
     const before = (await txOf(user)).filter((t) => t.status !== "cancelled").length;
-    const [cn] = await as(user, (ctx) => ctx.tx.select().from(s.bankConnections));
-    await as(user, (ctx) => bank.deleteConnection(ctx, cn.id, true));
+    for (const cn of await as(user, (ctx) => ctx.tx.select().from(s.bankConnections))) await as(user, (ctx) => bank.deleteConnection(ctx, cn.id, true));
     expect(await as(user, (ctx) => ctx.tx.select().from(s.bankConnections))).toHaveLength(0);
     expect(await as(user, (ctx) => ctx.tx.select().from(s.bankAccountLinks))).toHaveLength(0);
     expect((await txOf(user)).filter((t) => t.status !== "cancelled").length).toBe(before);

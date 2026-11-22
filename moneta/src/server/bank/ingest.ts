@@ -200,6 +200,15 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
   const byExt = new Map(existing.map((e) => [e.externalId!, e]));
   const catCtx = await loadCategorizeContext(ctx);
   const accountIds = [...new Set(accountByExt.values())];
+  // Carte à débit différé : les achats figurent sur le compte carte ; le prélèvement mensuel (summary_card) sur le
+  // compte courant n'est donc qu'un transfert courant → carte (sinon les dépenses seraient comptées deux fois).
+  const cardLinks = [...linkByExt.values()].filter((l) => l.externalType === "card" && l.syncEnabled);
+  const cardTargetFor = (t: PowensTransaction): string | null => {
+    if (t.type !== "summary_card" || !cardLinks.length) return null;
+    const children = cardLinks.filter((l) => String(accounts.find((a) => String(a.id) === l.externalAccountId)?.id_parent ?? "") === String(t.id_account));
+    const target = children.length === 1 ? children[0] : cardLinks.length === 1 ? cardLinks[0] : null;
+    return target && target.externalAccountId !== String(t.id_account) ? target.accountId : null;
+  };
   const minDate = incoming.length ? addDays(incoming[0].date, -7) : ctx.today;
   const manualPool = await ctx.tx
     .select()
@@ -228,6 +237,8 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
       if (!keepCancelled && prev.status !== status) patch.status = status;
       if (prev.bankStatus !== bankStatus) patch.bankStatus = bankStatus;
       if (prev.kind !== "transfer" && Math.abs(amount) !== prev.amount) patch.amount = Math.abs(amount);
+      const card = amount < 0 ? cardTargetFor(t) : null;
+      if (card && prev.kind === "expense") Object.assign(patch, { kind: "transfer" as const, toAccountId: card, categoryId: null, categorySource: null, categoryConfidence: null });
       if (prev.date !== t.date) patch.date = t.date;
       if ((t.vdate ?? null) !== prev.valueDate) patch.valueDate = t.vdate ?? null;
       if ((t.original_wording ?? null) !== prev.bankLabel) patch.bankLabel = t.original_wording ?? null;
@@ -266,7 +277,8 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
     // 3. Nouvelle opération bancaire
     const isIncome = amount > 0;
     const guess = ctx.settings.bank?.autoCategorize === false ? { categoryId: null, source: null, confidence: null } : categorize({ label, merchant: t.counterparty?.label ?? null, bankCategories: bankCats, isIncome }, catCtx);
-    const kind: "expense" | "income" | "refund" = amount < 0 ? "expense" : t.type === "payback" ? "refund" : "income";
+    const cardTarget = amount < 0 ? cardTargetFor(t) : null;
+    const kind: "expense" | "income" | "refund" | "transfer" = cardTarget ? "transfer" : amount < 0 ? "expense" : t.type === "payback" ? "refund" : "income";
     const [row] = await ctx.tx
       .insert(s.transactions)
       .values({
@@ -275,7 +287,8 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
         status,
         amount: Math.abs(amount),
         accountId,
-        categoryId: guess.categoryId,
+        toAccountId: cardTarget,
+        categoryId: cardTarget ? null : guess.categoryId,
         date: t.date,
         valueDate: t.vdate ?? null,
         description: label,
@@ -286,8 +299,8 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
         bankStatus,
         bankLabel: t.original_wording ?? null,
         bankCategory: bankCats[0] ?? null,
-        categorySource: guess.source,
-        categoryConfidence: guess.confidence,
+        categorySource: cardTarget ? null : guess.source,
+        categoryConfidence: cardTarget ? null : guess.confidence,
         importedAt: new Date(),
         tags: [],
       })
@@ -352,7 +365,8 @@ async function setInitialBalances(ctx: Ctx, accountIds: Set<string>) {
 
 async function finishRun(ctx: Ctx, connectionId: string, trigger: string, st: SyncStats, status: "success" | "partial" | "error", message?: string) {
   await ctx.tx.insert(s.syncRuns).values({ userId: ctx.userId, connectionId, trigger, status, accounts: st.accounts, created: st.created, updated: st.updated, merged: st.merged, message: message ?? (st.suggested ? `${st.suggested} doublon(s) possible(s) à vérifier` : null), finishedAt: new Date() });
-  await ctx.tx.update(s.bankConnections).set({ syncing: false, lastAttemptAt: new Date() }).where(eq(s.bankConnections.id, connectionId));
+  // Une synchronisation réussie (même partielle) met à jour la date affichée « Dernière synchronisation »
+  await ctx.tx.update(s.bankConnections).set({ syncing: false, lastAttemptAt: new Date(), ...(status === "success" ? { lastSyncAt: new Date(), lastError: null } : {}) }).where(eq(s.bankConnections.id, connectionId));
   await audit(ctx, "bank.sync", "bank_connection", connectionId, { trigger, ...st });
 }
 

@@ -32,10 +32,11 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
   const acc = fin.accountRows.find((a) => a.id === id);
   if (!acc) notFound();
   const balance = fin.balances.get(id) ?? acc.initialBalance;
+  const cur = fin.foreignAccountIds.has(id) ? acc.currency : undefined; // compte dans une autre devise
   const scope = new Set([id]);
   const from = addDays(addMonths(today, -6), 1) > acc.openedOn ? addDays(addMonths(today, -6), 1) : acc.openedOn;
-  const history = balanceHistory(fin.accounts, fin.txs, from, today, scope).map((p) => ({ date: p.date, total: p.balance, available: p.balance }));
-  const own = fin.txs.filter((t) => t.accountId === id || t.toAccountId === id);
+  const history = balanceHistory(fin.accounts, fin.allTxs, from, today, scope).map((p) => ({ date: p.date, total: p.balance, available: p.balance }));
+  const own = fin.allTxs.filter((t) => t.accountId === id || t.toAccountId === id);
   const month = periodTotals(own.filter((t) => t.accountId === id), `${today.slice(0, 7)}-01`, today, fin.cmap);
   const rows = fin.txRows.filter((t) => t.accountId === id || t.toAccountId === id).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.createdAt < b.createdAt ? 1 : -1)).slice(0, 200).map(toTxView);
   const planned = own.filter((t) => t.status === "planned").length;
@@ -64,20 +65,20 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
           {link.bank_account_links.ibanMasked && <span className="text-xs text-subtle">{link.bank_account_links.ibanMasked}</span>}
           {!link.bank_account_links.syncEnabled && <Badge tone="warning">Synchronisation suspendue</Badge>}
           <span className="ml-auto text-xs text-muted">
-            {link.bank_account_links.bankBalance !== null ? <>Solde communiqué par la banque : <strong className="tabular">{formatMoney(link.bank_account_links.bankBalance)}</strong>{link.bank_account_links.balanceAt ? ` (${formatDateFR(link.bank_account_links.balanceAt.toISOString().slice(0, 10))})` : ""}</> : "Solde non communiqué par la banque"}
+            {link.bank_account_links.bankBalance !== null ? <>Solde communiqué par la banque : <strong className="tabular">{formatMoney(link.bank_account_links.bankBalance, cur)}</strong>{link.bank_account_links.balanceAt ? ` (${formatDateFR(link.bank_account_links.balanceAt.toISOString().slice(0, 10))})` : ""}</> : "Solde non communiqué par la banque"}
           </span>
           {link.bank_account_links.bankBalance !== null && Math.abs(link.bank_account_links.bankBalance - balance) >= 1 && (
             <p className="basis-full text-xs text-warning">
-              Écart de {formatMoney(balance - link.bank_account_links.bankBalance, undefined, { signed: true })} avec le solde calculé (opérations antérieures non importées, opérations manuelles en double ou en attente…). Vérifie les <Link href="/transactions/a-verifier" className="underline">doublons possibles</Link> ou utilise « Rapprocher ».
+              Écart de {formatMoney(balance - link.bank_account_links.bankBalance, cur, { signed: true })} avec le solde calculé (opérations antérieures non importées, opérations manuelles en double ou en attente…). Vérifie les <Link href="/transactions/a-verifier" className="underline">doublons possibles</Link> ou utilise « Rapprocher ».
             </p>
           )}
         </div>
       )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Solde actuel" value={<Money cents={balance} tone={balance < 0 ? "negative" : "none"} />} hint="Solde initial + opérations effectuées" />
-        <Stat label="Solde initial" value={<Money cents={acc.initialBalance} />} hint={`au ${formatDateFR(acc.openedOn)}`} />
-        <Stat label="Entrées du mois" accent="positive" value={<Money cents={month.income + month.refunds} />} />
-        <Stat label="Sorties du mois" accent="negative" value={<Money cents={month.grossExpenses} />} hint={planned ? `${planned} opération(s) prévue(s) non comptée(s)` : undefined} />
+        <Stat label="Solde actuel" value={<Money cents={balance} currency={cur} tone={balance < 0 ? "negative" : "none"} />} hint="Solde initial + opérations effectuées" />
+        <Stat label="Solde initial" value={<Money cents={acc.initialBalance} currency={cur} />} hint={`au ${formatDateFR(acc.openedOn)}`} />
+        <Stat label="Entrées du mois" accent="positive" value={<Money cents={month.income + month.refunds} currency={cur} />} />
+        <Stat label="Sorties du mois" accent="negative" value={<Money cents={month.grossExpenses} currency={cur} />} hint={planned ? `${planned} opération(s) prévue(s) non comptée(s)` : undefined} />
       </div>
       <Card className="mt-6">
         <CardHeader>
@@ -94,7 +95,7 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
         <CardHeader>
           <div>
             <CardTitle>Opérations</CardTitle>
-            <CardDescription>{own.length} opération(s) · solde après toutes les opérations : {formatMoney(balance)}</CardDescription>
+            <CardDescription>{own.length} opération(s) · solde après toutes les opérations : {formatMoney(balance, cur)}</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
