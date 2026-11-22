@@ -35,7 +35,7 @@ export default async function ConnectBankPage() {
         <>
           {"sandbox" in st && st.sandbox && (
             <Callout tone="warning" className="mb-4" title="Environnement de test (bac à sable)">
-              Ce serveur est relié au bac à sable de l&apos;agrégateur : seules des banques de test y sont proposées, aucune donnée réelle.
+              Ce serveur est relié au bac à sable de l&apos;agrégateur. Utilise uniquement le connecteur de test (recherche « test ») avec les identifiants fictifs fournis par l&apos;agrégateur : n&apos;entre jamais les identifiants de ta vraie banque ici.
             </Callout>
           )}
           <BankPicker />
