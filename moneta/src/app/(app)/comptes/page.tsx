@@ -37,7 +37,14 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
   const { fin, today, connections } = await runAsUser(user, async (ctx) => ({ fin: await loadFinance(ctx), today: ctx.today, connections: await connectionViews(ctx) }));
   const linked = new Set(connections.flatMap((c) => c.accounts.map((a) => a.accountId)));
   const manualAccounts = fin.accountRows.filter((a) => !a.archivedAt && !linked.has(a.id)).map((a) => ({ id: a.id, name: a.name }));
-  const cb = sp.banque ? CALLBACK_MESSAGES[sp.banque] ?? CALLBACK_MESSAGES.erreur : null;
+  const base = sp.banque ? CALLBACK_MESSAGES[sp.banque] ?? CALLBACK_MESSAGES.erreur : null;
+  // Message adapté au parcours : connexion, renouvellement d'autorisation ou gestion des comptes partagés
+  const cb =
+    base && sp.banque === "ok" && sp.flux === "reconnect"
+      ? { ...base, title: "Autorisation renouvelée", body: "Ta banque est de nouveau accessible ; la synchronisation a repris." }
+      : base && sp.banque === "ok" && sp.flux === "manage"
+        ? { ...base, title: "Comptes partagés mis à jour", body: "Les comptes que tu partages avec MONETA ont été mis à jour." }
+        : base;
   const created = Number(sp.nouvelles ?? 0);
   const dups = Number(sp.doublons ?? 0);
   const active = fin.accountRows.filter((a) => !a.archivedAt);
