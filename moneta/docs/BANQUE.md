@@ -4,10 +4,11 @@ MONETA lit les comptes bancaires de l'utilisateur via **Powens**, agrégateur ag
 (service d'information sur les comptes). L'intégration est **en lecture seule** : aucun endpoint de
 paiement ou de virement n'est appelé, et aucune fonctionnalité de paiement n'existe dans l'application.
 
-> État honnête : l'intégration a été développée d'après la documentation officielle
-> (docs.powens.com, consultée le 21/11/2026) et testée contre un **serveur Powens simulé**.
-> Elle n'a **jamais été exécutée contre l'API Powens réelle** (aucun identifiant client disponible).
-> Voir « Avant la mise en production ».
+> État : développé d'après la documentation officielle (docs.powens.com), testé contre un serveur simulé,
+> puis **validé sur le bac à sable Powens réel** (domaine sandbox, connecteur de test, 22–23/11/2026) :
+> création de l'utilisateur Powens, liste des banques, webview, retour, import (3 comptes, 152 opérations),
+> webhooks `CONNECTION_SYNCED` authentifiés par jeton (33 nouvelles opérations, 5 mises à jour, rejeu sans doublon).
+> **Non testé** : authentification HMAC des webhooks (non proposée par la console sandbox), banques réelles en production.
 
 ## 1. Principes de sécurité
 
