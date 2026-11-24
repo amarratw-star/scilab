@@ -15,6 +15,7 @@ import { NewAccountButton } from "./new-account";
 import { formatPct } from "@/lib/money";
 import { bankStatus, connectionViews } from "@/server/bank/service";
 import { BankConnections } from "./connections";
+import { describeConnectionState } from "@/lib/bank/states";
 
 const CALLBACK_MESSAGES: Record<string, { tone: "positive" | "warning" | "negative" | "info"; title: string; body: string }> = {
   ok: { tone: "positive", title: "Banque connectée", body: "Tes comptes partagés ont été synchronisés." },
@@ -44,7 +45,13 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
       ? { ...base, title: "Autorisation renouvelée", body: "Ta banque est de nouveau accessible ; la synchronisation a repris." }
       : base && sp.banque === "ok" && sp.flux === "manage"
         ? { ...base, title: "Comptes partagés mis à jour", body: "Les comptes que tu partages avec MONETA ont été mis à jour." }
-        : base;
+        : sp.banque === "refus" && sp.code
+          ? (() => {
+              if (sp.code === "wrongpass") return { tone: "negative" as const, title: "Identifiants refusés par ta banque", body: "Vérifie ton identifiant et ton mot de passe bancaires (saisis chez ta banque, jamais dans MONETA), puis réessaie. Aucune donnée n'a été importée." };
+              const i = describeConnectionState(sp.code);
+              return { tone: i.tone === "negative" ? ("negative" as const) : ("warning" as const), title: `La connexion n'a pas abouti : ${i.label.toLowerCase()}`, body: `${i.message} Aucune donnée n'a été importée.` };
+            })()
+          : base;
   const created = Number(sp.nouvelles ?? 0);
   const dups = Number(sp.doublons ?? 0);
   const active = fin.accountRows.filter((a) => !a.archivedAt);

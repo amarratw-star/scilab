@@ -7,6 +7,8 @@ import { recordSyncError } from "@/server/bank/ingest";
 
 const STATE_COOKIE = "moneta_bank_state";
 const KNOWN_ERRORS = new Set(["access_denied", "server_error", "cancelled", "temporarily_unavailable"]);
+// États de connexion Powens pouvant être renvoyés comme erreur par la webview (comparaison insensible à la casse)
+const POWENS_STATES = ["wrongpass", "passwordExpired", "actionNeeded", "additionalInformationNeeded", "SCARequired", "webauthRequired", "decoupled", "validating", "rateLimiting", "websiteUnavailable", "bug"];
 
 /**
  * Retour de la webview Powens : ?connection_id=…&state=… en cas de succès, ?error=…&error_description=… sinon.
@@ -26,7 +28,14 @@ export async function GET(req: NextRequest) {
   const state = url.searchParams.get("state") ?? "";
   if (!expected || state.length !== expected.length || !timingSafeEqual(Buffer.from(state), Buffer.from(expected))) return go("banque=etat");
   const error = url.searchParams.get("error");
-  if (error) return go(`banque=${KNOWN_ERRORS.has(error) ? error : "erreur"}`);
+  if (error) {
+    // Journal serveur pour le diagnostic (valeurs tronquées et nettoyées : contenu non fiable)
+    const clean = (v: string | null) => (v ?? "").replace(/[^\w .,:'’()-]/g, "").slice(0, 160);
+    console.warn(`[bank] retour webview en erreur : ${clean(error)} — ${clean(url.searchParams.get("error_description"))}`);
+    if (KNOWN_ERRORS.has(error)) return go(`banque=${error}`);
+    const state = POWENS_STATES.find((s) => s.toLowerCase() === error.toLowerCase());
+    return go(state ? `banque=refus&code=${state}` : "banque=erreur");
+  }
   const connectionId = url.searchParams.get("connection_id");
   if (!bankStatus(user).available) return go("banque=indisponible");
   if (connectionId && !/^\d{1,18}$/.test(connectionId)) return go("banque=erreur");
