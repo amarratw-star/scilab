@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:predeploy": "node scripts/predeploy.mjs",
     "db:setup-local": "bash scripts/setup-local-db.sh",
     "db:backup": "bash scripts/backup.sh",
     "db:restore": "bash scripts/restore.sh",
