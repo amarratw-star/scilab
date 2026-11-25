@@ -26,7 +26,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["pdfkit", "exceljs", "@node-rs/argon2", "web-push", "nodemailer"],
+  serverExternalPackages: ["pdfkit", "exceljs", "unpdf", "@node-rs/argon2", "web-push", "nodemailer"],
   experimental: {
     serverActions: { bodySizeLimit: "8mb" },
   },

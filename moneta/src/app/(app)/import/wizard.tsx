@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, FileUp } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { extractRows, guessMapping, parseCsvText, suggestCategoryName, type Colu
 import { checkImportDuplicatesAction, importCsvAction } from "@/app/actions/finance";
 import { formatMoney } from "@/lib/money";
 import { formatDateFR } from "@/lib/dates";
+import type { StatementResult } from "@/lib/pdf-statement";
 
 type Row = { index: number; date: string; label: string; amount: number; categoryId: string | null; include: boolean; status: "new" | "imported" | "in_file" | "possible" };
 
@@ -35,15 +36,40 @@ export function ImportWizard() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [pdf, setPdf] = useState<(StatementResult & { pages: number }) | null>(null);
+  const [section, setSection] = useState(0);
 
-  const extracted = useMemo(() => (csv && mapping ? extractRows(csv, mapping) : []), [csv, mapping]);
+  const extracted = useMemo(() => {
+    if (pdf) return (pdf.sections[section]?.rows ?? []).map((r, i) => ({ index: i, date: r.date as string | null, label: r.label, amount: r.amount as number | null, categoryLabel: null as string | null, errors: [] as string[] }));
+    return csv && mapping ? extractRows(csv, mapping) : [];
+  }, [csv, mapping, pdf, section]);
   const valid = extracted.filter((r) => r.errors.length === 0);
   const invalid = extracted.length - valid.length;
 
   if (!accounts.length) return <p className="text-sm text-muted">Crée d&apos;abord un compte dans lequel importer les opérations.</p>;
 
+  const onPdf = async (f: File) => {
+    setBusy(true);
+    const body = new FormData();
+    body.append("file", f);
+    const res = await fetch("/api/import/pdf", { method: "POST", body }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    setBusy(false);
+    if (!res?.ok || !data) return void toast.error(data?.error ?? "Ce PDF n'a pas pu être lu.");
+    setPdf(data);
+    setSection(0);
+    setCsv(null);
+    setMapping(null);
+    setFileName(f.name);
+    setRows(null);
+    setResult(null);
+    if (!data.sections?.some((s: { rows: unknown[] }) => s.rows.length)) toast.error("Aucune opération reconnue dans ce PDF.");
+  };
+
   const onFile = async (f: File | undefined) => {
     if (!f) return;
+    if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) return onPdf(f);
+    setPdf(null);
     if (f.size > 5 * 1024 * 1024) return void toast.error("Fichier trop volumineux (5 Mo maximum).");
     let text = await f.text();
     if (text.includes("�")) {
@@ -96,7 +122,7 @@ export function ImportWizard() {
         <p className="text-sm text-muted">{result.skipped} doublon(s) ignoré(s).</p>
         <div className="mt-4 flex justify-center gap-2">
           <Button onClick={() => router.push("/transactions")}>Voir les opérations</Button>
-          <Button variant="outline" onClick={() => { setCsv(null); setRows(null); setResult(null); }}>Importer un autre fichier</Button>
+          <Button variant="outline" onClick={() => { setCsv(null); setPdf(null); setFileName(""); setRows(null); setResult(null); }}>Importer un autre fichier</Button>
         </div>
       </Card>
     );
@@ -104,18 +130,43 @@ export function ImportWizard() {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader><div><CardTitle>1. Fichier et compte</CardTitle><CardDescription>Formats acceptés : CSV (séparateur ; , ou tabulation), encodage UTF-8 ou Windows-1252.</CardDescription></div></CardHeader>
+        <CardHeader><div><CardTitle>1. Fichier et compte</CardTitle><CardDescription>Formats acceptés : relevé <strong>PDF</strong> téléchargé depuis ta banque (lu sur le serveur MONETA, jamais transmis à un tiers ni conservé), ou export <strong>CSV</strong>.</CardDescription></div></CardHeader>
         <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Compte de destination" htmlFor="iacc">
             <Select id="iacc" value={accountId} onChange={(e) => { setAccountId(e.target.value); setRows(null); }}>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select>
           </Field>
           <label className="flex h-full cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-border-strong p-4 text-sm text-muted hover:bg-surface-2">
             <FileUp className="size-5" />
-            {fileName ? <span className="font-medium text-foreground">{fileName}</span> : "Choisir un fichier CSV"}
-            <input type="file" accept=".csv,text/csv,.txt" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+            {busy && !csv && !rows ? "Lecture du relevé…" : fileName ? <span className="font-medium text-foreground">{fileName}</span> : "Choisir un relevé PDF ou un fichier CSV"}
+            <input type="file" accept=".pdf,application/pdf,.csv,text/csv,.txt" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
           </label>
         </CardContent>
       </Card>
+
+      {pdf && (
+        <Card>
+          <CardHeader><div><CardTitle className="flex items-center gap-2"><FileText className="size-4" /> 2. Relevé PDF</CardTitle><CardDescription>{pdf.pages} page(s){pdf.period ? ` · du ${formatDateFR(pdf.period.from)} au ${formatDateFR(pdf.period.to)}` : ""}</CardDescription></div></CardHeader>
+          <CardContent className="space-y-3">
+            {pdf.sections.length > 1 && (
+              <Field label="Ce relevé contient plusieurs comptes : lequel importer ?" htmlFor="psec">
+                <Select id="psec" value={section} onChange={(e) => { setSection(Number(e.target.value)); setRows(null); }}>
+                  {pdf.sections.map((s, i) => <option key={i} value={i}>{s.title ?? `Compte ${i + 1}`} — {s.rows.length} opération(s)</option>)}
+                </Select>
+              </Field>
+            )}
+            {(() => {
+              const s = pdf.sections[section];
+              if (!s) return null;
+              if (s.gap === 0) return <p className="flex items-start gap-2 rounded-xl bg-positive-soft p-3 text-sm text-positive"><CheckCircle2 className="mt-0.5 size-4 shrink-0" /> Lecture complète vérifiée : ancien solde {formatMoney(s.opening!.amount)} + opérations = nouveau solde {formatMoney(s.closing!.amount)}{s.closing?.date ? ` au ${formatDateFR(s.closing.date)}` : ""}.</p>;
+              if (s.gap !== null) return <p className="flex items-start gap-2 rounded-xl bg-warning-soft p-3 text-sm text-warning"><AlertTriangle className="mt-0.5 size-4 shrink-0" /> Écart de {formatMoney(Math.abs(s.gap))} entre les soldes du relevé et les opérations lues : certaines lignes n&apos;ont peut-être pas été reconnues. Compare l&apos;aperçu avec ton relevé avant d&apos;importer.</p>;
+              return <p className="flex items-start gap-2 rounded-xl bg-surface-2 p-3 text-sm text-muted"><AlertTriangle className="mt-0.5 size-4 shrink-0" /> Soldes du relevé non trouvés : impossible de vérifier automatiquement que toutes les opérations ont été lues. Contrôle l&apos;aperçu.</p>;
+            })()}
+            {pdf.warnings.map((w) => <p key={w} className="text-xs text-warning">{w}</p>)}
+            <p className="text-xs text-muted">{extracted.length} opération(s) reconnue(s). Après l&apos;import, utilise « Rapprocher » sur la page du compte avec le nouveau solde du relevé si besoin.</p>
+            <Button disabled={!extracted.length} loading={busy} onClick={preview}>Prévisualiser l&apos;import</Button>
+          </CardContent>
+        </Card>
+      )}
 
       {csv && mapping && (
         <Card>

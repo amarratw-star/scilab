@@ -11,7 +11,7 @@ export default async function ImportPage() {
   await requireUser();
   return (
     <div>
-      <PageHeader title="Importer des opérations" description="Relevé CSV exporté depuis ta banque : correspondance automatique des colonnes, aperçu, détection des doublons et catégorisation avant validation." />
+      <PageHeader title="Importer des opérations" description="Relevé PDF ou export CSV de ta banque : lecture automatique, aperçu, détection des doublons et catégorisation avant validation." />
       <ImportWizard />
       <div className="mt-10">
         <Callout tone="info" title="Synchronisation automatique">
