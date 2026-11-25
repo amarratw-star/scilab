@@ -122,7 +122,13 @@ export async function notifyAfterSync(ctx: Ctx, st: { created: number; suggested
 export async function refreshConnection(ctx: Ctx, connectionId: string) {
   const [conn] = await ctx.tx.select().from(s.bankConnections).where(eq(s.bankConnections.id, connectionId));
   if (!conn?.externalConnectionId) throw new ServiceError("Connexion introuvable");
-  if (conn.lastAttemptAt && Date.now() - conn.lastAttemptAt.getTime() < 5 * 60_000) throw new ServiceError("Une actualisation a déjà été demandée il y a moins de 5 minutes.");
+  // Limite : une actualisation MANUELLE toutes les 5 minutes (les synchronisations reçues par webhook ne comptent pas)
+  const [recent] = await ctx.tx
+    .select({ id: s.syncRuns.id })
+    .from(s.syncRuns)
+    .where(and(eq(s.syncRuns.connectionId, conn.id), eq(s.syncRuns.trigger, "manual"), gte(s.syncRuns.startedAt, new Date(Date.now() - 5 * 60_000))))
+    .limit(1);
+  if (recent) throw new ServiceError("Une actualisation a déjà été demandée il y a moins de 5 minutes.");
   const c = client();
   const token = await bankToken(ctx);
   if (!token) throw new ServiceError("Aucune banque connectée.");

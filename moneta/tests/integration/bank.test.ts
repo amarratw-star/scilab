@@ -490,6 +490,18 @@ describe("même banque connectée deux fois", () => {
   });
 });
 
+describe("limite des actualisations manuelles", () => {
+  it("un webhook récent ne bloque pas l'actualisation manuelle ; deux actualisations manuelles rapprochées, si", async () => {
+    const [c] = await as(user, (ctx) => ctx.tx.select().from(s.bankConnections).where(eq(s.bankConnections.externalConnectionId, "7001")));
+    await as(user, (ctx) => ctx.tx.delete(s.syncRuns).where(eq(s.syncRuns.trigger, "manual"))); // isole le test des précédents
+    await as(user, (ctx) => ingestConnection(ctx, conn, [A1], [], "webhook")); // synchronisation automatique à l'instant
+    // Pas de configuration Powens dans les tests : l'actualisation échoue plus loin, mais PAS sur la limite de 5 minutes
+    await expect(as(user, (ctx) => bank.refreshConnection(ctx, c.id))).rejects.not.toThrow(/moins de 5 minutes/);
+    await as(user, (ctx) => ctx.tx.insert(s.syncRuns).values({ userId: user.id, connectionId: c.id, trigger: "manual", status: "success" }));
+    await expect(as(user, (ctx) => bank.refreshConnection(ctx, c.id))).rejects.toThrow(/moins de 5 minutes/);
+  });
+});
+
 describe("gestion des comptes et connexions", () => {
   it("suspendre la synchronisation d'un compte : ses opérations ne sont plus importées", async () => {
     const acc = await accountId("502");
