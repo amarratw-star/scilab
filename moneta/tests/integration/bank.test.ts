@@ -429,6 +429,19 @@ describe("carte à débit différé et comptes en devise étrangère", () => {
     expect(fin.balances.get(await accountId("602"))).toBe(-5000);
   });
 
+  it("reclasser après coup un prélèvement de carte déjà importé ne crée pas d'argent fictif sur la carte", async () => {
+    // Situation réelle : opération importée comme dépense par une version antérieure, puis reclassée
+    const row = (await txOf(user)).find((x) => x.externalId === "802")!;
+    await as(user, (ctx) => ctx.tx.update(s.transactions).set({ kind: "expense", toAccountId: null }).where(eq(s.transactions.id, row.id)));
+    const card = await accountId("602");
+    const [acc] = await as(user, (ctx) => ctx.tx.select().from(s.accounts).where(eq(s.accounts.id, card)));
+    await as(user, (ctx) => ctx.tx.update(s.accounts).set({ initialBalance: acc.initialBalance - 5000 }).where(eq(s.accounts.id, card))); // ancrage de l'époque
+    const before = (await as(user, (ctx) => loadFinance(ctx))).balances.get(card);
+    await as(user, (ctx) => ingestConnection(ctx, conn2, [C, K], [T(802, 601, "2026-03-18", -50, "RELEVE CARTE DIFFEREE", { type: "summary_card" })], "manual"));
+    expect((await txOf(user)).find((x) => x.externalId === "802")!.kind).toBe("transfer");
+    expect((await as(user, (ctx) => loadFinance(ctx))).balances.get(card)).toBe(before);
+  });
+
   it("une connexion réussie met à jour la date de dernière synchronisation", async () => {
     const [c] = await as(user, (ctx) => ctx.tx.select().from(s.bankConnections).where(eq(s.bankConnections.externalConnectionId, "7002")));
     expect(c.lastSyncAt).not.toBeNull();

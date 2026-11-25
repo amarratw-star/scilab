@@ -218,6 +218,7 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
   const pendingPool = await ctx.tx.select().from(s.transactions).where(and(inArray(s.transactions.accountId, accountIds), eq(s.transactions.bankStatus, "coming"), eq(s.transactions.status, "planned")));
   const newBank: MatchTx[] = incoming.filter((t) => !byExt.has(String(t.id))).map((t) => ({ id: String(t.id), accountId: accountByExt.get(String(t.id_account))!, date: t.date, amount: toCents(t.value) ?? 0, label: labelOf(t) }));
 
+  const cardReclass = new Map<string, number>();
   for (const t of incoming) {
     const ext = String(t.id);
     const accountId = accountByExt.get(String(t.id_account))!;
@@ -238,7 +239,12 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
       if (prev.bankStatus !== bankStatus) patch.bankStatus = bankStatus;
       if (prev.kind !== "transfer" && Math.abs(amount) !== prev.amount) patch.amount = Math.abs(amount);
       const card = amount < 0 ? cardTargetFor(t) : null;
-      if (card && prev.kind === "expense") Object.assign(patch, { kind: "transfer" as const, toAccountId: card, categoryId: null, categorySource: null, categoryConfidence: null });
+      if (card && prev.kind === "expense") {
+        Object.assign(patch, { kind: "transfer" as const, toAccountId: card, categoryId: null, categorySource: null, categoryConfidence: null });
+        // Le solde initial de la carte a été ancré sur le solde bancaire avec l'ancienne classification :
+        // on compense pour que ce reclassement ne crée pas d'argent fictif sur le compte carte.
+        if (prev.status === "posted") cardReclass.set(card, (cardReclass.get(card) ?? 0) + prev.amount);
+      }
       if (prev.date !== t.date) patch.date = t.date;
       if ((t.vdate ?? null) !== prev.valueDate) patch.valueDate = t.vdate ?? null;
       if ((t.original_wording ?? null) !== prev.bankLabel) patch.bankLabel = t.original_wording ?? null;
@@ -314,6 +320,10 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
     }
   }
 
+  for (const [cardId, amt] of cardReclass) {
+    await ctx.tx.update(s.accounts).set({ initialBalance: sql`${s.accounts.initialBalance} - ${amt}` }).where(eq(s.accounts.id, cardId));
+    await audit(ctx, "bank.card_reclassified", "account", cardId, { amount: amt });
+  }
   stats.transfers = await pairInternalTransfers(ctx, accountIds, minDate);
   await setInitialBalances(ctx, newAccounts);
   await finishRun(ctx, connection.id, trigger, stats, connection.state ? "partial" : "success");
