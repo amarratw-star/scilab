@@ -237,6 +237,9 @@ APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
 APP_ENCRYPTION_KEY=<aléatoire>   CRON_SECRET=<aléatoire>
 POWENS_DOMAIN, POWENS_CLIENT_ID, POWENS_CLIENT_SECRET, (POWENS_WEBHOOK_SECRET)
 ```
+Déploiement automatique : déclencheur Railway sur la branche de MONETA (l'application GitHub « Railway App » doit
+avoir accès au dépôt), limité aux changements sous `moneta/**`.
+
 `scripts/predeploy.mjs` crée ou met à jour le rôle `moneta_app` (LOGIN, **sans BYPASSRLS**) puis applique les
 migrations, à chaque déploiement : aucune connexion directe à la base n'est nécessaire depuis un poste.
 
