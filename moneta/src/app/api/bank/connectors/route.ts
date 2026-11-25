@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/server/auth/session";
 import { bankStatus, client } from "@/server/bank/service";
 import type { PowensConnector } from "@/server/bank/client";
+import { readableColor } from "@/lib/color";
 
 let cache: { at: number; list: { uuid: string; name: string; color: string | null; beta: boolean }[] } | null = null;
 
@@ -16,7 +17,7 @@ export async function GET() {
       const { connectors } = await client().listConnectors();
       const list = (connectors ?? [])
         .filter((c: PowensConnector) => !c.hidden && (!c.capabilities || c.capabilities.includes("bank")))
-        .map((c) => ({ uuid: c.uuid, name: c.name, color: c.color ? `#${String(c.color).replace(/^#/, "")}` : null, beta: Boolean(c.beta) }))
+        .map((c) => ({ uuid: c.uuid, name: c.name, color: c.color ? readableColor(`#${String(c.color).replace(/^#/, "")}`) : null, beta: Boolean(c.beta) }))
         .sort((a, b) => a.name.localeCompare(b.name, "fr"));
       cache = { at: Date.now(), list };
     } catch {

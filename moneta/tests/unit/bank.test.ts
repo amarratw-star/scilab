@@ -165,3 +165,14 @@ describe("dates-heures Powens (sans fuseau, heure de Paris)", () => {
     expect(parsePowensDateTime(formatPowensDateTime(d))!.getTime()).toBe(d.getTime());
   });
 });
+
+describe("couleurs de banque lisibles", async () => {
+  const { readableColor } = await import("@/lib/color");
+  it("assombrit une couleur trop pâle, garde une couleur déjà foncée, remplace une valeur invalide", () => {
+    const pale = readableColor("#d6ecf5");
+    expect(pale).not.toBe("#d6ecf5");
+    expect(readableColor(pale)).toBe(pale); // stable
+    expect(readableColor("#0b3d91")).toBe("#0b3d91");
+    expect(readableColor("pas une couleur")).toBe("#2a78d6");
+  });
+});

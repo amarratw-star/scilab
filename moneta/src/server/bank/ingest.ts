@@ -20,6 +20,7 @@ import { computeBalances } from "@/lib/finance/ledger";
 import { categorize, merchantKey, type CategorizeContext } from "@/lib/bank/categorize";
 import { decideDuplicate, findSupersededPending, findTransferPair, type MatchTx } from "@/lib/bank/matching";
 import { maskIban } from "@/lib/bank/states";
+import { readableColor } from "@/lib/color";
 import { toLedgerAccount, toLedgerTx } from "@/server/services/snapshot";
 import { parsePowensDateTime, toCents, type PowensAccount, type PowensConnection, type PowensTransaction } from "./client";
 
@@ -124,7 +125,7 @@ export async function upsertConnection(ctx: Ctx, conn: PowensConnection) {
   const values = {
     connectorUuid: conn.connector?.uuid ?? conn.connector_uuid ?? null,
     connectorName: conn.connector?.name ?? null,
-    connectorColor: conn.connector?.color ? `#${String(conn.connector.color).replace(/^#/, "")}` : null,
+    connectorColor: conn.connector?.color ? readableColor(`#${String(conn.connector.color).replace(/^#/, "")}`) : null,
     state,
     errorMessage: conn.error_message ?? null,
     nextSyncAt: parsePowensDateTime(conn.next_try),
@@ -206,6 +207,12 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
         .where(and(eq(s.bankAccountLinks.connectionId, connection.id), eq(s.bankAccountLinks.externalAccountId, ext)));
     }
     stats.accounts++;
+  }
+
+  // Couleur d'origine trop pâle déjà enregistrée sur les comptes (versions antérieures) : remplacée par la version lisible
+  const rawColor = conn.connector?.color ? `#${String(conn.connector.color).replace(/^#/, "")}` : null;
+  if (rawColor && connection.connectorColor && rawColor.toLowerCase() !== connection.connectorColor.toLowerCase() && linkByExt.size) {
+    await ctx.tx.update(s.accounts).set({ color: connection.connectorColor }).where(and(inArray(s.accounts.id, [...linkByExt.values()].map((l) => l.accountId)), sql`lower(${s.accounts.color}) = ${rawColor.toLowerCase()}`));
   }
 
   // Comptes encore jamais alimentés par la banque (ex. doublon probable réactivé par l'utilisateur) :
