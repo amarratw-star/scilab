@@ -8,6 +8,9 @@ paiement ou de virement n'est appelé, et aucune fonctionnalité de paiement n'e
 > puis **validé sur le bac à sable Powens réel** (domaine sandbox, connecteur de test, 22–23/11/2026) :
 > création de l'utilisateur Powens, liste des banques, webview, retour, import (3 comptes, 152 opérations),
 > webhooks `CONNECTION_SYNCED` authentifiés par jeton (33 nouvelles opérations, 5 mises à jour, rejeu sans doublon).
+> Scénarios d'erreur du connecteur de test validés (24–25/11/2026) : webauthRequired (« Autorisation expirée » puis
+> reconnexion réussie), WrongPass (« Identifiants refusés », rien importé), ActionNeeded (« Action nécessaire »),
+> WebsiteUnavailable (« Erreur temporaire », données conservées).
 > **Non testé** : authentification HMAC des webhooks (non proposée par la console sandbox), banques réelles en production.
 
 ## 1. Principes de sécurité
