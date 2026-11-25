@@ -502,6 +502,41 @@ describe("limite des actualisations manuelles", () => {
   });
 });
 
+describe("catégorisation bancaire et rattrapage", () => {
+  it("si l'option « catégories » est refusée par Powens, la synchronisation continue sans elle", async () => {
+    const urls: string[] = [];
+    const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "content-type": "application/json" } });
+    PowensClient.categoriesUnavailable = false;
+    const c = new PowensClient({ domain: "test", clientId: "x", clientSecret: "y", apiBaseOverride: "http://127.0.0.1:9" }, (async (u: string | URL | Request) => {
+      urls.push(String(u));
+      return String(u).includes("expand=categories") ? json({ code: "forbidden" }, 403) : json({ transactions: [T(990, 501, "2026-03-20", -1, "CB TEST")], _links: { next: null } });
+    }) as typeof fetch);
+    const txs = await c.listTransactions("t", { minDate: "2026-01-01" });
+    expect(txs).toHaveLength(1);
+    expect(urls[0]).toContain("expand=categories");
+    expect(urls[1]).not.toContain("expand");
+    expect(PowensClient.categoriesUnavailable).toBe(true);
+    PowensClient.categoriesUnavailable = false;
+  });
+
+  it("rattrape les opérations importées sans catégorie, sans toucher aux autres", async () => {
+    const acc = await accountId("501");
+    const [loisirs] = await as(user, (ctx) => ctx.tx.select().from(s.categories).where(eq(s.categories.name, "Loisirs")));
+    const [a, b] = await as(user, (ctx) =>
+      ctx.tx.insert(s.transactions).values([
+        { userId: user.id, kind: "expense", status: "posted", amount: 1999, accountId: acc, date: "2026-03-20", description: "PRLV SEPA FREE MOBILE", bankLabel: "PRLV SEPA FREE MOBILE", source: "bank", externalId: "bf-1", importedAt: new Date(), tags: [] },
+        { userId: user.id, kind: "expense", status: "posted", amount: 1999, accountId: acc, date: "2026-03-20", description: "CB NETFLIX.COM", bankLabel: "CB NETFLIX.COM", source: "bank", externalId: "bf-2", importedAt: new Date(), categoryId: loisirs.id, categorySource: "user", tags: [] },
+      ]).returning(),
+    );
+    await as(user, (ctx) => ingestConnection(ctx, conn, [A1], [], "manual")); // rien de nouveau : le rattrapage tourne quand même
+    const after = await txOf(user);
+    const ra = after.find((x) => x.id === a.id)!;
+    expect(ra.categoryId).not.toBeNull();
+    expect(ra.categorySource).toBe("local");
+    expect(after.find((x) => x.id === b.id)!.categoryId).toBe(loisirs.id); // choix de l'utilisateur intact
+  });
+});
+
 describe("gestion des comptes et connexions", () => {
   it("suspendre la synchronisation d'un compte : ses opérations ne sont plus importées", async () => {
     const acc = await accountId("502");

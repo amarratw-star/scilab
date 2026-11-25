@@ -118,6 +118,29 @@ async function findAlreadySyncedAccount(ctx: Ctx, connection: { id: string; conn
   return match?.link.accountId ?? null;
 }
 
+/**
+ * Rattrapage : opérations bancaires restées SANS catégorie (jamais celles qui en ont une, ni les choix de
+ * l'utilisateur) — profite des améliorations du moteur et de l'historique appris depuis leur import.
+ */
+export async function backfillCategories(ctx: Ctx, accountIds: string[]): Promise<number> {
+  if (ctx.settings.bank?.autoCategorize === false || !accountIds.length) return 0;
+  const pending = await ctx.tx
+    .select()
+    .from(s.transactions)
+    .where(and(inArray(s.transactions.accountId, accountIds), isNull(s.transactions.categoryId), isNull(s.transactions.categorySource), sql`${s.transactions.importedAt} is not null`, ne(s.transactions.status, "cancelled"), inArray(s.transactions.kind, ["expense", "income", "refund"])))
+    .limit(2000);
+  if (!pending.length) return 0;
+  const catCtx = await loadCategorizeContext(ctx);
+  let n = 0;
+  for (const tx of pending) {
+    const g = categorize({ label: tx.bankLabel || tx.description || "", merchant: tx.merchant, bankCategories: tx.bankCategory ? [tx.bankCategory] : [], isIncome: tx.kind !== "expense" }, catCtx);
+    if (!g.categoryId) continue;
+    await ctx.tx.update(s.transactions).set({ categoryId: g.categoryId, categorySource: g.source, categoryConfidence: g.confidence }).where(and(eq(s.transactions.id, tx.id), isNull(s.transactions.categoryId)));
+    n++;
+  }
+  return n;
+}
+
 /** Met à jour (ou crée) la connexion locale à partir de l'objet Connection Powens. */
 export async function upsertConnection(ctx: Ctx, conn: PowensConnection) {
   const ext = String(conn.id);
@@ -233,6 +256,7 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
     .sort((a, b) => (a.date < b.date ? -1 : 1));
   stats.skipped += transactions.length - incoming.length;
   if (!incoming.length && !newAccounts.size) {
+    await backfillCategories(ctx, [...new Set(accountByExt.values())]);
     await finishRun(ctx, connection.id, trigger, stats, connection.state ? "partial" : "success");
     return stats;
   }
@@ -361,6 +385,7 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
     }
   }
 
+  await backfillCategories(ctx, accountIds);
   for (const [cardId, amt] of cardReclass) {
     await ctx.tx.update(s.accounts).set({ initialBalance: sql`${s.accounts.initialBalance} - ${amt}` }).where(eq(s.accounts.id, cardId));
     await audit(ctx, "bank.card_reclassified", "account", cardId, { amount: amt });

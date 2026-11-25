@@ -161,38 +161,67 @@ export async function importFingerprint(accountId: string, date: ISODate, amount
 }
 
 /** Règles simples de catégorisation automatique à partir du libellé (suggestion, modifiable avant import). */
+/**
+ * Moteur local de suggestion (aucun appel externe) : enseignes et motifs fréquents des libellés bancaires
+ * français. L'ordre compte : les motifs les plus spécifiques d'abord. Les noms renvoyés sont ceux des
+ * catégories par défaut de MONETA (sous-catégories comprises) ; une catégorie absente chez l'utilisateur
+ * est simplement ignorée.
+ */
 const CATEGORY_HINTS: [RegExp, string][] = [
-  [/(loyer|foncia|nexity|syndic|habitation)/, "Logement"],
-  [/(carrefour|leclerc|auchan|lidl|intermarche|monoprix|franprix|casino|super u|picard|aldi|biocoop|grand frais|naturalia)/, "Courses alimentaires"],
-  [/(starbucks|cafe|coffee|columbus|boulangerie|paul )/, "Cafés"],
-  [/(restaurant|resto|mcdo|mcdonald|burger|kfc|sushi|pizza|deliveroo|uber eats|ubereats|just eat|brasserie|bistrot)/, "Restaurants"],
-  [/(sncf|ratp|navigo|uber|bolt|blablacar|transavia|air france|easyjet|ryanair|velib|lime|tcl|tisseo)/, "Transport"],
-  [/(total|esso|shell|bp |avia|station|carburant|essence)/, "Essence"],
-  [/(pharmacie|docteur|medecin|dentiste|hopital|mutuelle|doctolib|ameli|laboratoire)/, "Santé"],
-  [/(basic fit|basic-fit|fitness|salle de sport|decathlon|neoness|keep cool|on air)/, "Sport"],
-  [/(netflix|spotify|deezer|disney|canal|amazon prime|prime video|apple com|icloud|youtube|adobe|microsoft|google storage|chatgpt|openai|notion)/, "Abonnements"],
-  [/(free mobile|orange|sfr|bouygues|sosh|red by|free telecom|freebox|livebox)/, "Téléphone et Internet"],
-  [/(zara|h&m|h et m|uniqlo|kiabi|celio|jules|primark|vinted|zalando|shein)/, "Vêtements"],
-  [/(amazon|fnac|darty|boulanger|cdiscount|ikea|leroy merlin|castorama|action )/, "Shopping"],
-  [/(cinema|ugc|pathe|gaumont|concert|spectacle|fnac spectacles|ticketmaster|steam|playstation|nintendo)/, "Loisirs"],
-  [/(bar |pub |club|soiree)/, "Sorties"],
-  [/(airbnb|booking|hotel|ibis|accor|abritel)/, "Voyages"],
-  [/(impot|dgfip|tresor public|taxe)/, "Impôts"],
-  [/(assurance|maif|macif|matmut|axa|allianz|gmf|groupama|maaf|alan)/, "Assurances"],
-  [/(frais|commission|cotisation carte|agios|interets debiteurs)/, "Frais bancaires"],
-  [/(edf|engie|electricite|gaz|eau |veolia|suez|total energies|totalenergies)/, "Logement"],
-  [/(universite|ecole|cours|formation|udemy|coursera|librairie)/, "Études"],
+  // Frais et opérations bancaires
+  [/(cotisation (carte|offre|forfait)|cotis carte|frais (de )?tenue|frais bancaires?|commission d intervention|commission|agios|interets debiteurs|frais (sur )?(retrait|paiement|virement|rejet|opposition)|abonnement (cyberplus|banque a distance)|offre (cristal|equilibre|initiatives)|frais carte|carte (visa|mastercard) (premier|classic|gold)|tenue de compte|frais d incident)/, "Frais bancaires"],
+  // Logement
+  [/(loyer|foncia|nexity|citya|orpi|century 21|laforet|syndic|copropriete|bailleur|habitat|immobiliere|opac|cdc habitat|sogeprom|location appartement)/, "Loyer"],
+  [/(edf|engie|electricite|total ?energies (electricite|gaz)|total direct energie|ekwateur|ohm energie|mint energie|eni gaz|gaz de bordeaux|vattenfall|planete oui|enercoop|gazprom energy|happ e)/, "Électricité et gaz"],
+  [/(veolia|suez|eau de paris|saur|eaux de|service des eaux|regie des eaux)/, "Eau"],
+  [/(leroy merlin|castorama|brico|mr bricolage|weldom|point p|bricomarche|truffaut|jardiland|gamm vert|plombier|serrurier)/, "Entretien"],
+  // Alimentation
+  [/(deliveroo|uber ?eats|just ?eat|frichti|getir|flink|gorillas|stuart)/, "Livraison"],
+  [/(mcdo|mc do|mcdonald|burger king|kfc|quick|five guys|subway|o tacos|otacos|domino|pizza hut|big fernand|bagelstein|pret a manger|class croute|brioche doree|paul |la mie caline)/, "Fast-food"],
+  [/(starbucks|columbus|coffee|cafe |cafeteria|nespresso|boulangerie|patisserie|bakery|maison kayser|eric kayser)/, "Cafés"],
+  [/(carrefour|leclerc|auchan|lidl|intermarche|monoprix|monop|franprix|casino|geant|super ?u|hyper ?u|systeme u|u express|picard|aldi|biocoop|grand frais|naturalia|la vie claire|netto|leader price|cora|match |spar |vival|proxi|coccinelle|diagonal|g20|marche frais|la grande epicerie|bio c bon|thiriet|chronodrive|epicerie|primeur|boucherie|poissonnerie|fromagerie|halles|marche )/, "Courses alimentaires"],
+  [/(restaurant|resto|brasserie|bistrot|bistro|creperie|pizzeria|sushi|traiteur|kebab|tacos|grill|buffalo|hippopotamus|courtepaille|flunch|del arte|la boucherie|leon de bruxelles|au bureau|les 3 brasseurs|wok|ramen|noodle|thai|indien|libanais)/, "Restaurants"],
+  // Transport
+  [/(ratp|navigo|tcl |tisseo|tan |tbm |star |transpole|ilevia|keolis|transdev|rtm |velib|velo v|lime|dott|tier |cityscoot|cooltra|bus |tram|metro)/, "Transports en commun"],
+  [/(uber|bolt|heetch|marcel|g7|taxi|free ?now|lecab|blablacar daily)/, "Taxi et VTC"],
+  [/(parking|indigo|effia|onepark|saemes|zenpark|interparking|autoroute|peage|sanef|vinci autoroutes|aprr|asf |cofiroute|area |bip ?& ?go|ulys|fourriere)/, "Parking et péage"],
+  [/(sncf|ouigo|tgv|ter |intercites|trainline|eurostar|thalys|blablacar|flixbus|blablabus|air france|transavia|easyjet|ryanair|vueling|volotea|lufthansa|klm|aeroport|airport)/, "Transport"],
+  [/(total |totalenergies station|esso|shell|bp |avia|station service|carburant|essence|gazole|intermarche carbu|leclerc carbu|carrefour station|dyneff|agip|ionity|tesla supercharger|freshmile|chargemap|recharge)/, "Essence"],
+  [/(norauto|feu vert|midas|speedy|point s|euromaster|controle technique|dekra|autosur|garage|carrosserie)/, "Transport"],
+  // Santé
+  [/(pharmacie|pharma|parapharmacie)/, "Pharmacie"],
+  [/(docteur|dr |medecin|dentiste|orthodont|kine|kinesitherapeute|osteopathe|ophtalmo|dermato|gyneco|pediatre|psychologue|laboratoire|labo |biologie|radiologie|imagerie|clinique|hopital|centre hospitalier|doctolib|optique|opticien|krys|afflelou|optic 2000|audition)/, "Consultations"],
+  [/(mutuelle|harmonie|mgen|malakoff|ag2r|apicil)/, "Santé"],
+  // Sport, loisirs, sorties
+  [/(basic ?fit|fitness park|neoness|keep cool|l orange bleue|on air|cmg sports|salle de sport|club sportif|piscine|decathlon|go sport|intersport|sport 2000|foot|tennis|golf|escalade|climb)/, "Sport"],
+  [/(netflix|spotify|deezer|disney|canal ?\+|canal plus|amazon prime|prime video|apple\.com|apple com|itunes|icloud|youtube|adobe|microsoft|office 365|google (storage|one|play)|chatgpt|openai|anthropic|claude|notion|dropbox|patreon|twitch|crunchyroll|molotov|dazn|bein|audible|kindle|playstation plus|xbox game pass|nintendo online)/, "Abonnements"],
+  [/(free mobile|free telecom|freebox|orange|sosh|sfr|red by sfr|bouygues|b ?& ?you|la poste mobile|prixtel|nrj mobile|lebara|lycamobile|syma)/, "Téléphone et Internet"],
+  [/(cinema|ugc|pathe|gaumont|mk2|cgr|kinepolis|concert|spectacle|theatre|musee|exposition|fnac spectacles|ticketmaster|see tickets|digitick|billetreduc|parc asterix|disneyland|futuroscope|bowling|escape game|laser game|karting|steam|playstation|nintendo|xbox|epic games|riot|blizzard|micromania|cultura)/, "Loisirs"],
+  [/(bar |pub |club|discotheque|boite de nuit|soiree|cave a|nicolas |v and b|v ?& ?b)/, "Sorties"],
+  [/(airbnb|booking|hotel|ibis|accor|novotel|mercure|campanile|b ?& ?b hotel|premiere classe|kyriad|abritel|gites|camping|expedia|hostel|logis)/, "Voyages"],
+  [/(club med|pierre et vacances|center parcs|belambra|vvf|odalys|ucpa|location vacances)/, "Vacances"],
+  // Shopping
+  [/(zara|h ?& ?m|h et m|uniqlo|kiabi|celio|jules|primark|vinted|zalando|shein|bershka|pull ?& ?bear|stradivarius|mango|promod|camaieu|etam|undiz|jennyfer|gemo|la halle|c ?& ?a |courir|foot locker|jd sports|nike|adidas|lacoste|galeries lafayette|printemps|bon marche|sephora|nocibe|marionnaud|yves rocher|kiko|lush|coiffeur|coiffure|barbier|esthetique|onglerie)/, "Vêtements"],
+  [/(amazon|amzn|fnac|darty|boulanger|cdiscount|ikea|maisons du monde|but |conforama|alinea|action |gifi|la foirfouille|hema|normal |flying tiger|aliexpress|temu|wish|ebay|rakuten|leboncoin|back market|apple store|samsung|ldlc|materiel\.net|rue du commerce|veepee|showroomprive|la redoute|etsy|paypal \*|sumup|zettle)/, "Shopping"],
+  [/(fleuriste|interflora|cadeau|cadeaux|nature et decouvertes|la grande recre|king jouet|jouet|toys)/, "Cadeaux"],
+  // Études
+  [/(universite|ecole|lycee|college|cours |formation|udemy|coursera|openclassrooms|librairie|gibert|crous|cantine|scolarite|frais d inscription)/, "Études"],
+  // Impôts, assurances
+  [/(impot|impots|dgfip|tresor public|finances publiques|taxe|amende|antai|urssaf|cfe )/, "Impôts"],
+  [/(assurance|assur|maif|macif|matmut|axa|allianz|gmf|groupama|maaf|mma |generali|swisslife|ag2r|alan|luko|lovys|leocare|direct assurance|olivier assurance|amv|april |cardif|pacifica|predica|bpce assurances|bpce vie)/, "Assurances"],
+  // Retraits (dépense en espèces)
+  [/(retrait dab|retrait gab|retrait especes|retrait au distributeur|^ ?ret dab| dab )/, "Autres"],
 ];
 
 const INCOME_HINTS: [RegExp, string][] = [
-  [/(salaire|paie|payroll|remuneration)/, "Salaire"],
-  [/(caf |allocation|pole emploi|france travail|apl)/, "Allocations"],
+  [/(salaire|paie|payroll|remuneration|virement salaire|vir salaire)/, "Salaire"],
+  [/(caf |c a f|allocation|pole emploi|france travail|apl |prime d activite|msa )/, "Allocations"],
   [/(bourse|crous)/, "Bourses"],
-  [/(remboursement|rembt|ameli|cpam|mutuelle)/, "Remboursements"],
-  [/(interets|interet)/, "Intérêts"],
-  [/(dividende)/, "Dividendes"],
-  [/(loyer recu|locataire)/, "Revenus locatifs"],
-  [/(facture|prestation|honoraires|malt|urssaf)/, "Revenus indépendants"],
+  [/(remboursement|rembt|rbt|ameli|cpam|caisse primaire|mutuelle|harmonie|mgen|avoir|refund|retour)/, "Remboursements"],
+  [/(interets|interet|remuneration livret)/, "Intérêts"],
+  [/(dividende|coupon)/, "Dividendes"],
+  [/(loyer recu|locataire|loyer)/, "Revenus locatifs"],
+  [/(facture|prestation|honoraires|malt|urssaf|stripe|sumup payout|paypal payout|shopify)/, "Revenus indépendants"],
 ];
 
 export function suggestCategoryName(label: string, isIncome: boolean): string | null {

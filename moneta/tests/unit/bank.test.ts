@@ -176,3 +176,38 @@ describe("couleurs de banque lisibles", async () => {
     expect(readableColor("pas une couleur")).toBe("#2a78d6");
   });
 });
+
+describe("catégorisation de libellés bancaires réels (moteur local)", async () => {
+  const { suggestCategoryName } = await import("@/lib/csv-import");
+  it.each([
+    ["CB****1234 CARREFOUR CITY 2311", false, "Courses alimentaires"],
+    ["PAIEMENT CB 2311 PARIS UBER EATS", false, "Livraison"],
+    ["PRLV SEPA FREE MOBILE", false, "Téléphone et Internet"],
+    ["CB SNCF CONNECT 22/11", false, "Transport"],
+    ["COTIS CARTE VISA CLASSIC", false, "Frais bancaires"],
+    ["CB PHARMACIE DU CENTRE", false, "Pharmacie"],
+    ["CB TOTAL ACCESS 2211", false, "Essence"],
+    ["PRLV SEPA EDF CLIENTS PARTICULIERS", false, "Électricité et gaz"],
+    ["CB MC DONALDS 2111", false, "Fast-food"],
+    ["CB AMAZON PAYMENTS", false, "Shopping"],
+    ["RETRAIT DAB 23/11 PARIS", false, "Autres"],
+    ["CB NETFLIX.COM", false, "Abonnements"],
+    ["VIR SEPA SALAIRE NOVEMBRE", true, "Salaire"],
+    ["VIR CAF DE PARIS", true, "Allocations"],
+  ])("%s → %s", (label, income, expected) => {
+    expect(suggestCategoryName(label as string, income as boolean)).toBe(expected);
+  });
+});
+
+describe("codes de catégories Powens officiels", () => {
+  const all: CategorizeContext["categories"] = [
+    ...cats,
+    { id: "c-livraison", name: "Livraison", kind: "expense" },
+    { id: "c-pharmacie", name: "Pharmacie", kind: "expense" },
+  ];
+  it("code enfant exact prioritaire (confiance 80), repli par mots-clés sinon", () => {
+    expect(categorize({ label: "XYZ", bankCategories: ["food_delivery", "food_and_restaurants"], isIncome: false }, ctx({ categories: all }))).toMatchObject({ categoryId: "c-livraison", source: "bank", confidence: 80 });
+    expect(categorize({ label: "XYZ", bankCategories: ["pharmacy", "healthcare"], isIncome: false }, ctx({ categories: all }))).toMatchObject({ categoryId: "c-pharmacie", confidence: 80 });
+    expect(categorize({ label: "XYZ", bankCategories: ["salary"], isIncome: true }, ctx())).toMatchObject({ categoryId: "c-salaire", confidence: 80 });
+  });
+});

@@ -9,7 +9,8 @@
  *   DELETE /2.0/users/me/connections/{id}       (suppression définitive côté Powens)
  *   DELETE /2.0/users/me                        (suppression de l'utilisateur Powens : effacement du compte MONETA)
  *   GET  /2.0/users/me/connections/{id}/accounts?all
- *   GET  /2.0/users/me/transactions?limit=…&last_update=…&all   (limit obligatoire, ≤ 1000 ; pagination _links.next)
+ *   GET  /2.0/users/me/transactions?limit=…&last_update=…&all&expand=categories   (limit obligatoire, ≤ 1000 ; pagination _links.next ;
+ *        catégories : option du domaine, ignorée si refusée)
  *   Webview : https://webview.powens.com/{lang}/{connect|reconnect|manage}?domain={domain}.biapi.pro&…
  * Lecture seule : aucun endpoint de paiement ou de virement n'est utilisé.
  */
@@ -53,6 +54,8 @@ export function powensConfig(): PowensConfig | null {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class PowensClient {
+  /** Mémorisé pour la durée du processus : l'option « catégorisation » n'est pas activée sur ce domaine. */
+  static categoriesUnavailable = false;
   readonly base: string;
   constructor(
     private cfg: PowensConfig,
@@ -132,8 +135,19 @@ export class PowensClient {
     if (opts.lastUpdate) params.set("last_update", opts.lastUpdate);
     else if (opts.minDate) params.set("min_date", opts.minDate);
     params.set("all", ""); // inclut les opérations supprimées par la banque, pour les retirer de MONETA
+    // Catégories bancaires : option Powens à activer par domaine. Si elle est refusée, on continue sans.
+    if (!PowensClient.categoriesUnavailable) params.set("expand", "categories");
     const out: PowensTransaction[] = [];
-    let page = await this.request<{ transactions: PowensTransaction[]; _links?: { next?: { href?: string } | null } }>("GET", `/users/me/transactions?${params.toString().replace("all=", "all")}`, { token });
+    type Page = { transactions: PowensTransaction[]; _links?: { next?: { href?: string } | null } };
+    let page: Page;
+    try {
+      page = await this.request<Page>("GET", `/users/me/transactions?${params.toString().replace("all=", "all")}`, { token });
+    } catch (e) {
+      if (!(e instanceof PowensError) || !params.has("expand") || (e.status !== 400 && e.status !== 403)) throw e;
+      PowensClient.categoriesUnavailable = true;
+      params.delete("expand");
+      page = await this.request<Page>("GET", `/users/me/transactions?${params.toString().replace("all=", "all")}`, { token });
+    }
     for (let i = 0; i < 100; i++) {
       out.push(...(page.transactions ?? []));
       const next = page._links?.next?.href;
