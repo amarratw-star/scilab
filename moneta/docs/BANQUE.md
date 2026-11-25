@@ -111,6 +111,14 @@ Score 0–100 : même compte et même sens, montant identique (±1 %), ≤ 5 jou
 - **≥ 55** ou ambigu (achats identiques légitimes) → proposition dans « Opérations à vérifier » : *Fusionner* (la saisie est annulée, jamais supprimée ; catégorie, notes et justificatifs reportés) ou *Garder les deux*.
 - Rapprochement d'un compte manuel avec un compte synchronisé : uniquement sur confirmation explicite ; les doublons résultants sont **proposés**.
 
+### Même banque connectée deux fois
+
+Lors de la création d'un compte, MONETA cherche un compte déjà synchronisé via une **autre** connexion active :
+même banque (connecteur), même devise, même type, et même IBAN masqué (à défaut, même nom). En cas de
+correspondance, le nouveau compte est créé **sans synchronisation** et **hors des totaux** (archivé), avec un
+avertissement. Rien n'est fusionné : l'utilisateur peut confirmer « C'est un autre compte », ce qui réactive
+la synchronisation et ancre le solde sur celui de la banque.
+
 ### Catégorisation (`src/lib/bank/categorize.ts`)
 
 Ordre : règle de l'utilisateur (95) › catégorie bancaire reconnue (70) › historique du commerçant (85 si ≥ 3, 75 si 2, part ≥ 80 %) › moteur local (60).

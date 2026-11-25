@@ -11,7 +11,7 @@ import { Callout } from "@/components/ui/misc";
 import { Money } from "@/components/ui/money";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown";
-import { deleteConnectionAction, mergeAccountsAction, refreshConnectionAction, setAccountSyncAction } from "@/app/actions/bank";
+import { confirmDistinctAccountAction, deleteConnectionAction, mergeAccountsAction, refreshConnectionAction, setAccountSyncAction } from "@/app/actions/bank";
 import type { ConnectionView } from "@/server/bank/service";
 import { BankInitials, startWebview } from "@/components/bank/bank-ui";
 
@@ -126,11 +126,25 @@ export function BankConnections({ available, unavailableMessage, connections, ma
                         {a.bankBalance !== null ? <Money cents={a.bankBalance} currency={a.currency ?? undefined} className="text-sm font-medium" /> : <span className="text-xs text-subtle">Solde non communiqué</span>}
                         {a.balanceAt && <p className="text-[11px] text-subtle">au {fmt(a.balanceAt)}</p>}
                       </div>
+                      {a.duplicateOf ? (
+                        <div className="basis-full rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning" role="status">
+                          <p>
+                            <strong>Compte déjà synchronisé ?</strong> Il ressemble à « {a.duplicateOf} », déjà connecté via une autre connexion. Pour éviter de compter ton argent deux fois, il n&apos;est pas synchronisé et reste hors de tes totaux.
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Button size="sm" variant="outline" disabled={pending} onClick={() => run(`d-${a.accountId}`, () => confirmDistinctAccountAction(a.accountId))}>
+                              C&apos;est un autre compte : le synchroniser
+                            </Button>
+                            <span className="self-center text-subtle">Sinon, rien à faire (ou retire-le du partage via « ⋯ › Ajouter ou retirer des comptes »).</span>
+                          </div>
+                        </div>
+                      ) : (
                       <label className="flex items-center gap-2 text-xs text-muted">
                         <Switch checked={a.syncEnabled} disabled={pending} onCheckedChange={(v) => run(`s-${a.accountId}`, () => setAccountSyncAction(a.accountId, v))} aria-label={`Synchroniser ${a.name}`} />
                         <span className="hidden sm:inline">Synchro</span>
                       </label>
-                      {manualAccounts.length > 0 && (
+                      )}
+                      {manualAccounts.length > 0 && !a.duplicateOf && (
                         <Button size="icon-sm" variant="ghost" aria-label={`Rapprocher un compte manuel de ${a.name}`} title="Rapprocher un compte manuel" onClick={() => setMerge({ bankAccountId: a.accountId, name: a.name })}>
                           <Combine />
                         </Button>

@@ -494,6 +494,8 @@ export const bankAccountLinks = pgTable(
     bankComing: cents("bank_coming"),
     balanceAt: timestamp("balance_at", { withTimezone: true }),
     disabledAtBank: boolean("disabled_at_bank").notNull().default(false),
+    /** Compte probablement identique, déjà synchronisé via une autre connexion : synchronisation suspendue en attendant la décision de l'utilisateur. */
+    duplicateOfAccountId: uuid("duplicate_of_account_id"),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.connectionId, t.externalAccountId] })],

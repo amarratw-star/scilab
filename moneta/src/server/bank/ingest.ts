@@ -94,6 +94,29 @@ function labelOf(t: PowensTransaction) {
   return (t.simplified_wording || t.wording || t.original_wording || "Opération bancaire").trim().slice(0, 200);
 }
 
+/**
+ * Compte probablement déjà synchronisé via une AUTRE connexion (même banque, même IBAN masqué ou même nom,
+ * même type, même devise). Renvoie l'identifiant du compte MONETA existant, ou null.
+ */
+async function findAlreadySyncedAccount(ctx: Ctx, connection: { id: string; connectorUuid: string | null; connectorName: string | null }, acc: PowensAccount): Promise<string | null> {
+  const iban = maskIban(acc.iban);
+  const name = acc.original_name ?? acc.name ?? null;
+  const currency = acc.currency?.id ?? null;
+  const others = await ctx.tx
+    .select({ link: s.bankAccountLinks, conn: s.bankConnections })
+    .from(s.bankAccountLinks)
+    .innerJoin(s.bankConnections, eq(s.bankConnections.id, s.bankAccountLinks.connectionId))
+    .where(and(ne(s.bankAccountLinks.connectionId, connection.id), ne(s.bankConnections.status, "revoked"), isNull(s.bankAccountLinks.duplicateOfAccountId)));
+  const sameBank = (c: typeof s.bankConnections.$inferSelect) => (connection.connectorUuid && c.connectorUuid ? c.connectorUuid === connection.connectorUuid : !!connection.connectorName && c.connectorName === connection.connectorName);
+  const match = others.find(({ link, conn }) =>
+    sameBank(conn) &&
+    (link.currency ?? null) === currency &&
+    (link.externalType ?? null) === (acc.type ?? null) &&
+    (iban ? link.ibanMasked === iban : !!name && link.externalName === name),
+  );
+  return match?.link.accountId ?? null;
+}
+
 /** Met à jour (ou crée) la connexion locale à partir de l'objet Connection Powens. */
 export async function upsertConnection(ctx: Ctx, conn: PowensConnection) {
   const ext = String(conn.id);
@@ -143,6 +166,7 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
     let link = linkByExt.get(ext);
     if (!link) {
       if (disabled || acc.deleted) continue; // compte non partagé : rien n'est importé
+      const duplicateOf = await findAlreadySyncedAccount(ctx, connection, acc);
       const [created] = await ctx.tx
         .insert(s.accounts)
         .values({
@@ -155,12 +179,14 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
           openedOn: ctx.today,
           color: connection.connectorColor ?? "#2a78d6",
           icon: "landmark",
-          description: "Compte synchronisé automatiquement",
+          description: duplicateOf ? "Doublon probable d'un compte déjà synchronisé : synchronisation suspendue" : "Compte synchronisé automatiquement",
+          // Hors totaux tant que l'utilisateur n'a pas décidé (jamais de fusion automatique)
+          archivedAt: duplicateOf ? new Date() : null,
         })
         .returning();
       [link] = await ctx.tx
         .insert(s.bankAccountLinks)
-        .values({ userId: ctx.userId, connectionId: connection.id, externalAccountId: ext, accountId: created.id, externalName: acc.original_name ?? acc.name ?? null, externalType: acc.type ?? null, ibanMasked: maskIban(acc.iban), currency: acc.currency?.id ?? null, bankBalance: balance, bankComing: coming, balanceAt: balance !== null ? balanceAt : null, lastSeenAt: new Date() })
+        .values({ userId: ctx.userId, connectionId: connection.id, externalAccountId: ext, accountId: created.id, syncEnabled: !duplicateOf, duplicateOfAccountId: duplicateOf, externalName: acc.original_name ?? acc.name ?? null, externalType: acc.type ?? null, ibanMasked: maskIban(acc.iban), currency: acc.currency?.id ?? null, bankBalance: balance, bankComing: coming, balanceAt: balance !== null ? balanceAt : null, lastSeenAt: new Date() })
         .returning();
       linkByExt.set(ext, link);
       newAccounts.add(link.accountId);
@@ -180,6 +206,14 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
         .where(and(eq(s.bankAccountLinks.connectionId, connection.id), eq(s.bankAccountLinks.externalAccountId, ext)));
     }
     stats.accounts++;
+  }
+
+  // Comptes encore jamais alimentés par la banque (ex. doublon probable réactivé par l'utilisateur) :
+  // leur solde initial sera ancré sur le solde bancaire comme lors d'une première synchronisation.
+  for (const l of linkByExt.values()) {
+    if (!l.syncEnabled || newAccounts.has(l.accountId)) continue;
+    const [any] = await ctx.tx.select({ id: s.transactions.id }).from(s.transactions).where(and(eq(s.transactions.accountId, l.accountId), sql`${s.transactions.externalId} is not null`)).limit(1);
+    if (!any) newAccounts.add(l.accountId);
   }
 
   // ---- Opérations ----

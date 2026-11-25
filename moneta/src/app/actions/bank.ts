@@ -21,6 +21,9 @@ export async function deleteConnectionAction(connectionId: string, keepData: boo
 export async function setAccountSyncAction(accountId: string, enabled: boolean) {
   return act((ctx) => bank.setAccountSync(ctx, id.parse(accountId), z.boolean().parse(enabled)), { message: enabled ? "Synchronisation réactivée pour ce compte" : "Synchronisation suspendue pour ce compte" });
 }
+export async function confirmDistinctAccountAction(accountId: string) {
+  return act((ctx) => bank.confirmDistinctAccount(ctx, id.parse(accountId)), { message: "Compte réactivé : il sera synchronisé à la prochaine actualisation" });
+}
 export async function mergeAccountsAction(manualAccountId: string, bankAccountId: string) {
   return act((ctx) => bank.mergeManualIntoBank(ctx, id.parse(manualAccountId), id.parse(bankAccountId)), { message: "Comptes rapprochés" });
 }

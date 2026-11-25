@@ -461,6 +461,35 @@ describe("carte à débit différé et comptes en devise étrangère", () => {
   });
 });
 
+describe("même banque connectée deux fois", () => {
+  const conn3 = { ...conn, id: 7003 }; // même connecteur que la connexion 7001
+  const A1bis: PowensAccount = { ...A1, id: 551, id_connection: 7003 }; // même IBAN que A1, autre identifiant Powens
+
+  it("le compte déjà synchronisé n'est pas dupliqué dans les totaux ni dans les opérations", async () => {
+    const before = await as(user, (ctx) => loadFinance(ctx));
+    const st = await as(user, (ctx) => ingestConnection(ctx, conn3, [A1bis], [T(900, 551, "2026-03-19", -15, "CB DOUBLON")], "callback"));
+    expect(st.created).toBe(0); // aucune opération importée sur le doublon
+    const [link] = await as(user, (ctx) => ctx.tx.select().from(s.bankAccountLinks).where(eq(s.bankAccountLinks.externalAccountId, "551")));
+    expect(link.syncEnabled).toBe(false);
+    expect(link.duplicateOfAccountId).toBe(await accountId("501"));
+    const after = await as(user, (ctx) => loadFinance(ctx));
+    expect(after.summary.totalFinancial).toBe(before.summary.totalFinancial);
+    const counts = await as(user, (ctx) => bank.reviewCounts(ctx));
+    expect(counts.duplicateAccounts).toBe(1);
+    await expect(as(user, (ctx) => bank.setAccountSync(ctx, link.accountId, true))).rejects.toThrow(/autre connexion/);
+  });
+
+  it("si l'utilisateur confirme qu'il s'agit d'un autre compte, il est synchronisé avec un solde ancré sur la banque", async () => {
+    const [link] = await as(user, (ctx) => ctx.tx.select().from(s.bankAccountLinks).where(eq(s.bankAccountLinks.externalAccountId, "551")));
+    await as(user, (ctx) => bank.confirmDistinctAccount(ctx, link.accountId));
+    await as(user, (ctx) => ingestConnection(ctx, conn3, [A1bis], [T(900, 551, "2026-03-19", -15, "CB DOUBLON")], "manual"));
+    const fin = await as(user, (ctx) => loadFinance(ctx));
+    expect((await txOf(user)).some((t) => t.externalId === "900")).toBe(true);
+    expect(fin.balances.get(link.accountId)).toBe(150000); // = solde communiqué par la banque
+    expect(fin.accountRows.find((a) => a.id === link.accountId)!.archivedAt).toBeNull();
+  });
+});
+
 describe("gestion des comptes et connexions", () => {
   it("suspendre la synchronisation d'un compte : ses opérations ne sont plus importées", async () => {
     const acc = await accountId("502");

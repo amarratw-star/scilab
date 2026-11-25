@@ -158,9 +158,28 @@ export async function deleteConnection(ctx: Ctx, connectionId: string, keepData:
 }
 
 export async function setAccountSync(ctx: Ctx, accountId: string, enabled: boolean) {
+  if (enabled) {
+    const [l] = await ctx.tx.select().from(s.bankAccountLinks).where(eq(s.bankAccountLinks.accountId, accountId));
+    if (l?.duplicateOfAccountId) throw new ServiceError("Ce compte semble déjà synchronisé via une autre connexion. Confirme d'abord qu'il s'agit d'un autre compte.");
+  }
   const [row] = await ctx.tx.update(s.bankAccountLinks).set({ syncEnabled: enabled }).where(eq(s.bankAccountLinks.accountId, accountId)).returning();
   if (!row) throw new ServiceError("Ce compte n'est pas synchronisé.");
   await audit(ctx, enabled ? "bank.account_sync_on" : "bank.account_sync_off", "account", accountId);
+}
+
+/**
+ * L'utilisateur confirme qu'un compte signalé comme doublon probable est bien un AUTRE compte :
+ * il est réactivé, réintégré aux totaux, et sera alimenté (avec ancrage du solde) à la prochaine synchronisation.
+ */
+export async function confirmDistinctAccount(ctx: Ctx, accountId: string) {
+  const [row] = await ctx.tx
+    .update(s.bankAccountLinks)
+    .set({ duplicateOfAccountId: null, syncEnabled: true })
+    .where(and(eq(s.bankAccountLinks.accountId, accountId), sql`${s.bankAccountLinks.duplicateOfAccountId} is not null`))
+    .returning();
+  if (!row) throw new ServiceError("Ce compte n'est pas signalé comme doublon.");
+  await ctx.tx.update(s.accounts).set({ archivedAt: null, description: "Compte synchronisé automatiquement", updatedAt: new Date() }).where(eq(s.accounts.id, accountId));
+  await audit(ctx, "bank.duplicate_account_confirmed_distinct", "account", accountId);
 }
 
 /** Rapproche un compte manuel d'un compte synchronisé qui représente le même compte réel. */
@@ -289,7 +308,7 @@ export interface ConnectionView {
   lastSyncAt: string | null;
   nextSyncAt: string | null;
   lastError: string | null;
-  accounts: { accountId: string; name: string; ibanMasked: string | null; externalType: string | null; syncEnabled: boolean; disabledAtBank: boolean; bankBalance: number | null; balanceAt: string | null; currency: string | null }[];
+  accounts: { accountId: string; name: string; ibanMasked: string | null; externalType: string | null; syncEnabled: boolean; disabledAtBank: boolean; bankBalance: number | null; balanceAt: string | null; currency: string | null; duplicateOf: string | null }[];
 }
 
 /** Vue sérialisable des connexions (aucun jeton, aucun identifiant externe exposé au navigateur). */
@@ -307,7 +326,7 @@ export async function connectionViews(ctx: Ctx): Promise<ConnectionView[]> {
     lastError: c.state ? null : c.lastError,
     accounts: links
       .filter((l) => l.connectionId === c.id)
-      .map((l) => ({ accountId: l.accountId, name: name.get(l.accountId) ?? l.externalName ?? "Compte", ibanMasked: l.ibanMasked, externalType: l.externalType, syncEnabled: l.syncEnabled, disabledAtBank: l.disabledAtBank, bankBalance: l.bankBalance, balanceAt: l.balanceAt?.toISOString() ?? null, currency: l.currency })),
+      .map((l) => ({ accountId: l.accountId, name: name.get(l.accountId) ?? l.externalName ?? "Compte", ibanMasked: l.ibanMasked, externalType: l.externalType, syncEnabled: l.syncEnabled, disabledAtBank: l.disabledAtBank, bankBalance: l.bankBalance, balanceAt: l.balanceAt?.toISOString() ?? null, currency: l.currency, duplicateOf: l.duplicateOfAccountId ? (name.get(l.duplicateOfAccountId) ?? "un autre compte") : null })),
   }));
 }
 
@@ -322,7 +341,8 @@ export async function reviewCounts(ctx: Ctx) {
     const a = describeConnectionState(c.state, { expired: !!c.expiresAt && c.expiresAt.getTime() < Date.now() }).action;
     return a === "reconnect" || a === "bank_site";
   });
-  return { unverified: u.n, duplicates: d.n, connections: conns.length, needAction: needAction.map((c) => c.name ?? "Banque") };
+  const [da] = await ctx.tx.select({ n: sql<number>`count(*)::int` }).from(s.bankAccountLinks).where(sql`${s.bankAccountLinks.duplicateOfAccountId} is not null`);
+  return { unverified: u.n, duplicates: d.n, duplicateAccounts: da.n, connections: conns.length, needAction: needAction.map((c) => c.name ?? "Banque") };
 }
 
 export interface ReviewFilters { statut?: "non" | "oui" | "tous"; type?: "expense" | "income" | "transfer"; compte?: string; du?: string; au?: string; categorie?: string }

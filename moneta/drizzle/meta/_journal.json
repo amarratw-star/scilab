@@ -36,6 +36,13 @@
       "when": 1795257663519,
       "tag": "0004_bank_cron",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795599258663,
+      "tag": "0005_bank_duplicate_accounts",
+      "breakpoints": true
     }
   ]
 }
