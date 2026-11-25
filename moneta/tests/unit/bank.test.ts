@@ -190,7 +190,7 @@ describe("catégorisation de libellés bancaires réels (moteur local)", async (
     ["PRLV SEPA EDF CLIENTS PARTICULIERS", false, "Électricité et gaz"],
     ["CB MC DONALDS 2111", false, "Fast-food"],
     ["CB AMAZON PAYMENTS", false, "Shopping"],
-    ["RETRAIT DAB 23/11 PARIS", false, "Autres"],
+    ["RETRAIT DAB 23/11 PARIS", false, "Retraits d'espèces"],
     ["CB NETFLIX.COM", false, "Abonnements"],
     ["VIR SEPA SALAIRE NOVEMBRE", true, "Salaire"],
     ["VIR CAF DE PARIS", true, "Allocations"],
@@ -209,5 +209,15 @@ describe("codes de catégories Powens officiels", () => {
     expect(categorize({ label: "XYZ", bankCategories: ["food_delivery", "food_and_restaurants"], isIncome: false }, ctx({ categories: all }))).toMatchObject({ categoryId: "c-livraison", source: "bank", confidence: 80 });
     expect(categorize({ label: "XYZ", bankCategories: ["pharmacy", "healthcare"], isIncome: false }, ctx({ categories: all }))).toMatchObject({ categoryId: "c-pharmacie", confidence: 80 });
     expect(categorize({ label: "XYZ", bankCategories: ["salary"], isIncome: true }, ctx())).toMatchObject({ categoryId: "c-salaire", confidence: 80 });
+  });
+});
+
+describe("retraits d'espèces", () => {
+  const withCash: CategorizeContext["categories"] = [...cats, { id: "c-retraits", name: "Retraits d'espèces", kind: "expense" }];
+  it("un retrait signalé par la banque est rangé dans « Retraits d'espèces », même avec un libellé obscur", () => {
+    expect(categorize({ label: "OPERATION 48812", bankType: "withdrawal", isIncome: false }, ctx({ categories: withCash }))).toMatchObject({ categoryId: "c-retraits", confidence: 90, source: "bank" });
+  });
+  it("la règle de l'utilisateur reste prioritaire", () => {
+    expect(categorize({ label: "RETRAIT DAB GARE", bankType: "withdrawal", isIncome: false }, ctx({ categories: withCash, rules: [{ pattern: "gare", categoryId: "c-transport" }] })).categoryId).toBe("c-transport");
   });
 });

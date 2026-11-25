@@ -43,6 +43,13 @@
       "when": 1795599258663,
       "tag": "0005_bank_duplicate_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795620843144,
+      "tag": "0006_retraits_especes",
+      "breakpoints": true
     }
   ]
 }

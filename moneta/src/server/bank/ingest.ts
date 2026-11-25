@@ -133,7 +133,7 @@ export async function backfillCategories(ctx: Ctx, accountIds: string[]): Promis
   const catCtx = await loadCategorizeContext(ctx);
   let n = 0;
   for (const tx of pending) {
-    const g = categorize({ label: tx.bankLabel || tx.description || "", merchant: tx.merchant, bankCategories: tx.bankCategory ? [tx.bankCategory] : [], isIncome: tx.kind !== "expense" }, catCtx);
+    const g = categorize({ label: tx.bankLabel || tx.description || "", merchant: tx.merchant, bankCategories: tx.bankCategory ? [tx.bankCategory] : [], isIncome: tx.kind !== "expense", bankType: tx.paymentMethod === "cash" ? "withdrawal" : null }, catCtx);
     if (!g.categoryId) continue;
     await ctx.tx.update(s.transactions).set({ categoryId: g.categoryId, categorySource: g.source, categoryConfidence: g.confidence }).where(and(eq(s.transactions.id, tx.id), isNull(s.transactions.categoryId)));
     n++;
@@ -347,7 +347,7 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
     }
     // 3. Nouvelle opération bancaire
     const isIncome = amount > 0;
-    const guess = ctx.settings.bank?.autoCategorize === false ? { categoryId: null, source: null, confidence: null } : categorize({ label, merchant: t.counterparty?.label ?? null, bankCategories: bankCats, isIncome }, catCtx);
+    const guess = ctx.settings.bank?.autoCategorize === false ? { categoryId: null, source: null, confidence: null } : categorize({ label, merchant: t.counterparty?.label ?? null, bankCategories: bankCats, isIncome, bankType: t.type ?? null }, catCtx);
     const cardTarget = amount < 0 ? cardTargetFor(t) : null;
     const kind: "expense" | "income" | "refund" | "transfer" = cardTarget ? "transfer" : amount < 0 ? "expense" : t.type === "payback" ? "refund" : "income";
     const [row] = await ctx.tx

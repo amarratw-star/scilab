@@ -209,8 +209,8 @@ const CATEGORY_HINTS: [RegExp, string][] = [
   // Impôts, assurances
   [/(impot|impots|dgfip|tresor public|finances publiques|taxe|amende|antai|urssaf|cfe )/, "Impôts"],
   [/(assurance|assur|maif|macif|matmut|axa|allianz|gmf|groupama|maaf|mma |generali|swisslife|ag2r|alan|luko|lovys|leocare|direct assurance|olivier assurance|amv|april |cardif|pacifica|predica|bpce assurances|bpce vie)/, "Assurances"],
-  // Retraits (dépense en espèces)
-  [/(retrait dab|retrait gab|retrait especes|retrait au distributeur|^ ?ret dab| dab )/, "Autres"],
+  // Retraits d'espèces au distributeur
+  [/(retrait dab|retrait gab|retrait especes|retrait au distributeur|retrait cb|^ ?ret dab| dab | gab )/, "Retraits d'espèces"],
 ];
 
 const INCOME_HINTS: [RegExp, string][] = [

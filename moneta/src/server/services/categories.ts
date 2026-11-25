@@ -29,6 +29,7 @@ export const DEFAULT_EXPENSE_CATEGORIES: Def[] = [
   { name: "Impôts", icon: "landmark", color: "#475569", isFixed: true },
   { name: "Assurances", icon: "shield", color: "#0f766e", isFixed: true },
   { name: "Frais bancaires", icon: "credit-card", color: "#78716c" },
+  { name: "Retraits d'espèces", icon: "banknote", color: "#64748b" },
   { name: "Autres", icon: "tag", color: "#94a3b8" },
 ];
 

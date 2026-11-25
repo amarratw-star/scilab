@@ -46,7 +46,7 @@ const BANK_CODES: Record<string, string> = {
   ecommerce: "Shopping", online_shopping: "Shopping", multimedia_books_stationery: "Shopping", books_media_stationery: "Shopping", tech_accessories_and_electronics: "Shopping", department_stores: "Shopping", others_shopping: "Shopping", gifts_and_florists: "Cadeaux",
   fuel_and_vehicle_charging: "Essence", fuel_and_gas: "Essence", fuel: "Essence", parking_maintenance_tolls: "Parking et péage", parking_and_tolls: "Parking et péage", public_transportation: "Transports en commun", local_transportation: "Transports en commun",
   rental_and_taxis: "Taxi et VTC", train_travel: "Transport", plane_or_boat_travel: "Transport", plane_train_boat_travel: "Transport", others_travel_and_transport: "Transport", car_rental: "Transport", vehicle_maintenance_and_repairs: "Transport",
-  withdrawal: "Autres", cash_withdrawal: "Autres",
+  withdrawal: "Retraits d'espèces", cash_withdrawal: "Retraits d'espèces",
   // revenus
   salary: "Salaire", pensions: "Allocations", pension: "Allocations", family_benefits: "Allocations", unemployment_benefits: "Allocations", other_benefits: "Allocations", housing_benefits: "Allocations",
   rental_income: "Revenus locatifs", income_from_rent: "Revenus locatifs", health_insurance_reimbursement: "Remboursements", insurance_repayments: "Remboursements", refund: "Remboursements", interest_received: "Intérêts", dividends_received: "Dividendes",
@@ -84,7 +84,7 @@ export function merchantKey(merchant: string | null | undefined, label: string |
   return normalizeLabel(merchant || label || "").split(" ").slice(0, 3).join(" ");
 }
 
-export function categorize(input: { label: string; merchant?: string | null; bankCategories?: string[]; isIncome: boolean }, ctx: CategorizeContext): CategoryGuess {
+export function categorize(input: { label: string; merchant?: string | null; bankCategories?: string[]; isIncome: boolean; bankType?: string | null }, ctx: CategorizeContext): CategoryGuess {
   const kind = input.isIncome ? "income" : "expense";
   const byName = (name: string) => ctx.categories.find((c) => c.kind === kind && c.name.toLowerCase() === name.toLowerCase())?.id ?? null;
   const key = merchantKey(input.merchant, input.label);
@@ -93,6 +93,11 @@ export function categorize(input: { label: string; merchant?: string | null; ban
   const rule = ctx.rules.find((r) => r.pattern && (key.includes(r.pattern) || fullKey.includes(r.pattern)));
   if (rule && ctx.categories.some((c) => c.id === rule.categoryId && c.kind === kind)) return { categoryId: rule.categoryId, confidence: 95, source: "rule" };
   // 2. Catégorie bancaire
+  // Type d'opération communiqué par la banque : un retrait au distributeur est sans ambiguïté
+  if (input.bankType === "withdrawal" && !input.isIncome) {
+    const id = byName("Retraits d'espèces");
+    if (id) return { categoryId: id, confidence: 90, source: "bank" };
+  }
   // Codes précis (enfants) avant les codes parents
   for (const code of input.bankCategories ?? []) {
     const exact = BANK_CODES[code.trim()];
