@@ -159,3 +159,38 @@ export function toCents(v: number | string | null | undefined): number | null {
   if (!Number.isFinite(n)) return null;
   return Math.round(n * 100);
 }
+
+/**
+ * Les dates-heures Powens sont renvoyées sans fuseau (« 2026-11-25 12:37:00 »). Constaté sur le bac à sable :
+ * elles sont exprimées en heure de Paris (la date de mise à jour d'un compte coïncide avec l'heure locale de la
+ * synchronisation). Elles sont donc interprétées en Europe/Paris, quel que soit le fuseau du serveur (UTC chez
+ * l'hébergeur). Une valeur portant un fuseau explicite (Z ou ±hh:mm) est respectée telle quelle.
+ */
+const POWENS_TZ = "Europe/Paris";
+
+function tzOffsetMs(utcMs: number, timeZone: string): number {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).formatToParts(new Date(utcMs)).map((p) => [p.type, p.value]));
+  const asUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+  return asUtc - Math.floor(utcMs / 1000) * 1000;
+}
+
+export function parsePowensDateTime(v: string | null | undefined): Date | null {
+  if (!v) return null;
+  const s = String(v).trim();
+  if (/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) {
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(s);
+  if (!m) return null;
+  const wall = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0));
+  let utc = wall - tzOffsetMs(wall, POWENS_TZ);
+  utc = wall - tzOffsetMs(utc, POWENS_TZ); // seconde passe : changements d'heure
+  return new Date(utc);
+}
+
+/** Date → « AAAA-MM-JJ HH:MM:SS » en heure de Paris (paramètre last_update de l'API). */
+export function formatPowensDateTime(d: Date): string {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: POWENS_TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).formatToParts(d).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`;
+}

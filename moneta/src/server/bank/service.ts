@@ -8,7 +8,7 @@ import { merchantKey, ruleSuggestions } from "@/lib/bank/categorize";
 import { normalizeLabel } from "@/lib/finance/labels";
 import { duplicateScore, SUGGEST_SCORE } from "@/lib/bank/matching";
 import { describeConnectionState } from "@/lib/bank/states";
-import { PowensClient, PowensError, powensConfig, type PowensAccount, type PowensTransaction } from "./client";
+import { formatPowensDateTime, PowensClient, PowensError, powensConfig, type PowensAccount, type PowensTransaction } from "./client";
 import { ingestConnection, recordSyncError, type SyncStats } from "./ingest";
 
 export function bankStatus(user: { isDemo: boolean; hasDemoData: boolean }) {
@@ -78,7 +78,7 @@ export async function pullSync(ctx: Ctx, trigger: "manual" | "callback" | "sched
   const isFirst = conns.some((x) => !local.find((l) => l.externalConnectionId === String(x.id))?.lastSyncAt);
   let txs: PowensTransaction[] = [];
   try {
-    txs = await c.listTransactions(token, isFirst || !oldest ? { minDate: addDays(ctx.today, -90) } : { lastUpdate: new Date(oldest.getTime() - 2 * 86400000).toISOString().slice(0, 19) });
+    txs = await c.listTransactions(token, isFirst || !oldest ? { minDate: addDays(ctx.today, -90) } : { lastUpdate: formatPowensDateTime(new Date(oldest.getTime() - 2 * 86400000)) });
   } catch (e) {
     for (const conn of conns) {
       const l = local.find((x) => x.externalConnectionId === String(conn.id));

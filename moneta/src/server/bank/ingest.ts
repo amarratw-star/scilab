@@ -21,7 +21,7 @@ import { categorize, merchantKey, type CategorizeContext } from "@/lib/bank/cate
 import { decideDuplicate, findSupersededPending, findTransferPair, type MatchTx } from "@/lib/bank/matching";
 import { maskIban } from "@/lib/bank/states";
 import { toLedgerAccount, toLedgerTx } from "@/server/services/snapshot";
-import { toCents, type PowensAccount, type PowensConnection, type PowensTransaction } from "./client";
+import { parsePowensDateTime, toCents, type PowensAccount, type PowensConnection, type PowensTransaction } from "./client";
 
 export interface SyncStats {
   accounts: number;
@@ -127,12 +127,12 @@ export async function upsertConnection(ctx: Ctx, conn: PowensConnection) {
     connectorColor: conn.connector?.color ? `#${String(conn.connector.color).replace(/^#/, "")}` : null,
     state,
     errorMessage: conn.error_message ?? null,
-    nextSyncAt: conn.next_try ? new Date(conn.next_try) : null,
-    expiresAt: conn.expire ? new Date(conn.expire) : null,
+    nextSyncAt: parsePowensDateTime(conn.next_try),
+    expiresAt: parsePowensDateTime(conn.expire),
     status: state ? "error" : "active",
     syncing: false,
     updatedAt: new Date(),
-    ...(!state && conn.last_update ? { lastSyncAt: new Date(conn.last_update) } : {}),
+    ...(!state && parsePowensDateTime(conn.last_update) ? { lastSyncAt: parsePowensDateTime(conn.last_update)! } : {}),
   };
   const [existing] = await ctx.tx.select().from(s.bankConnections).where(and(eq(s.bankConnections.provider, "powens"), eq(s.bankConnections.externalConnectionId, ext)));
   if (existing) {
@@ -162,7 +162,7 @@ export async function ingestConnection(ctx: Ctx, conn: PowensConnection, account
     const disabled = Boolean(acc.disabled);
     const balance = toCents(acc.balance);
     const coming = toCents(acc.coming);
-    const balanceAt = acc.last_update ? new Date(acc.last_update) : new Date();
+    const balanceAt = parsePowensDateTime(acc.last_update) ?? new Date();
     let link = linkByExt.get(ext);
     if (!link) {
       if (disabled || acc.deleted) continue; // compte non partagé : rien n'est importé

@@ -5,7 +5,7 @@ import { gzipSync } from "node:zlib";
 import { categorize, merchantKey, ruleSuggestions, CONFIRM_THRESHOLD, type CategorizeContext } from "@/lib/bank/categorize";
 import { decideDuplicate, duplicateScore, findSupersededPending, findTransferPair, type MatchTx } from "@/lib/bank/matching";
 import { describeConnectionState, maskIban } from "@/lib/bank/states";
-import { toCents } from "@/server/bank/client";
+import { formatPowensDateTime, parsePowensDateTime, toCents } from "@/server/bank/client";
 import { computeSignature, decodeBody, verifyHmac } from "@/server/bank/webhook";
 
 const cats: CategorizeContext["categories"] = [
@@ -148,5 +148,20 @@ describe("authenticité des webhooks", () => {
   it("décompresse un corps gzip", () => {
     expect(decodeBody(gzipSync(Buffer.from(body)), "gzip")).toBe(body);
     expect(decodeBody(Buffer.from(body), null)).toBe(body);
+  });
+});
+
+describe("dates-heures Powens (sans fuseau, heure de Paris)", () => {
+  it("interprète une heure d'hiver et d'été en Europe/Paris, quel que soit le fuseau du serveur", () => {
+    expect(parsePowensDateTime("2026-11-25 12:37:00")!.toISOString()).toBe("2026-11-25T11:37:00.000Z");
+    expect(parsePowensDateTime("2026-07-14 12:00:00")!.toISOString()).toBe("2026-07-14T10:00:00.000Z");
+    expect(parsePowensDateTime("2026-11-25T12:37:00Z")!.toISOString()).toBe("2026-11-25T12:37:00.000Z");
+    expect(parsePowensDateTime(null)).toBeNull();
+    expect(parsePowensDateTime("n'importe quoi")).toBeNull();
+  });
+  it("aller-retour pour le paramètre last_update", () => {
+    const d = new Date("2026-03-29T01:30:00Z"); // jour du passage à l'heure d'été
+    expect(formatPowensDateTime(d)).toBe("2026-03-29 03:30:00");
+    expect(parsePowensDateTime(formatPowensDateTime(d))!.getTime()).toBe(d.getTime());
   });
 });
