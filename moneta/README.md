@@ -218,6 +218,28 @@ la webview réelle : aucune banque réelle n'est contactée.
 4. `DATABASE_URL` = même hôte avec l'utilisateur `moneta_app`. Avec le *pooler* Supabase en mode transaction
    (port 6543), ajouter `DATABASE_DISABLE_PREPARE=true`.
 
+### Railway (base + application au même endroit)
+
+Configuration utilisée pour l'instance MONETA (région EU West) :
+
+| Service | Source | Réglages |
+|---|---|---|
+| `Postgres` | modèle officiel PostgreSQL | volume persistant |
+| `moneta` | dépôt GitHub, **Root Directory `moneta`** | pré-déploiement `npm run db:predeploy`, vérification de santé `/connexion`, `PORT=8080` |
+| `moneta-cron` | image `curlimages/curl` | planification `17 5 * * *`, appelle `$APP_URL/api/cron/daily` avec `Authorization: Bearer $CRON_SECRET` |
+
+Variables du service `moneta` (références Railway entre `${{…}}`) :
+```
+MIGRATION_DATABASE_URL=${{Postgres.DATABASE_URL}}            # rôle propriétaire, migrations uniquement
+MONETA_APP_PASSWORD=<aléatoire, ≥ 24 caractères>
+DATABASE_URL=postgresql://moneta_app:${{MONETA_APP_PASSWORD}}@${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{Postgres.PGDATABASE}}
+APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
+APP_ENCRYPTION_KEY=<aléatoire>   CRON_SECRET=<aléatoire>
+POWENS_DOMAIN, POWENS_CLIENT_ID, POWENS_CLIENT_SECRET, (POWENS_WEBHOOK_SECRET)
+```
+`scripts/predeploy.mjs` crée ou met à jour le rôle `moneta_app` (LOGIN, **sans BYPASSRLS**) puis applique les
+migrations, à chaque déploiement : aucune connexion directe à la base n'est nécessaire depuis un poste.
+
 ### Application (Vercel)
 
 1. Importer le dépôt, **Root Directory = `moneta`**, framework Next.js (détecté).
